@@ -14,13 +14,32 @@
 2. 문서에 없는 외부 서비스, 논문 기술, 데이터 포맷을 핵심 경로에 추가하지 않는다.
 3. 논문의 주장을 구현 완료 사실처럼 쓰지 않는다. 공개 코드가 없는 기술은 `paper-derived reimplementation`으로 표시한다.
 4. 실제로 실행되지 않은 단계는 `passed`로 기록하지 않는다. fixture와 mock은 이름과 UI에서 모두 `simulated`로 표시한다.
-5. 모든 산출물은 원본 사람 영상까지 역추적할 수 있어야 한다.
+5. 모든 산출물은 원본 physical-behavior source(사람 영상, robot state, teleop,
+   simulation 또는 multimodal capture)까지 역추적할 수 있어야 한다.
 6. 증폭은 단일 소스 demonstration이 물리 검증을 통과한 뒤에만 시작한다.
 7. 계약과 상태 머신을 먼저 고정하고, GPU와 웹을 그 계약에 맞춰 독립적으로 개발한다.
 
 ## 1. 한 문장 정의
 
-FORGE는 고객의 로봇 task 요구를 받아 Terac을 통해 목적에 맞는 인간 demonstration을 수집하고, RunPod GPU에서 이를 metric 4D hand-object interaction과 embodiment-neutral `Canonical Skill IR`로 복원한 뒤, 접촉 일관성·로봇 retargeting·물리 replay를 통과한 source만 증폭하여 **고객 소유의 학습 가능한 로봇 데이터셋**으로 납품하는 데이터 제조 회사다.
+FORGE는 고객의 로봇 task 요구를 받아 Terac 또는 고객 시스템에서 목적에 맞는
+physical-behavior source를 수집하고, RunPod GPU에서 이를 metric 4D
+actor-counterpart interaction과 embodiment-neutral `Canonical Skill IR`로 복원한 뒤,
+접촉 일관성·robot retargeting·motion-specific physics replay를 통과한 source만
+증폭하여 **고객 소유의 학습 가능한 로봇 데이터셋**으로 납품하는 데이터 제조 회사다.
+
+### 2026-08-15 전역 로봇 scope 규칙
+
+이 규칙이 이 문서 아래의 과거 manipulation 예시보다 우선한다. FORGE core는 손,
+사람, dexterous manipulation에 한정되지 않는다. source actor는 human, robot, mixed,
+simulation 또는 unknown일 수 있고 observation은 video, robot state, teleop log,
+simulation trace 또는 multimodal일 수 있다. motion family는 manipulation, bimanual,
+tool use, locomotion, whole body, mobile manipulation, navigation, aerial, articulated
+machine, multi-robot를 포함한다. `hand`, `MANO`, `object`라는 아래 설명은
+manipulation profile의 구체 예일 뿐 공통 schema나 제품 전체의 제한이 아니다.
+
+새 에이전트는 실제 구현 기준으로 `docs/JOONGHUI_COMPILER.md`와
+`src/forge/modules/skill_ir/models.py`를 함께 읽는다. target robot별 simulator와
+quality profile이 없는 motion family는 UI에서 production-ready로 표시하지 않는다.
 
 핵심 흐름은 다음과 같다.
 

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.example/schemas/pioneer-verdict.v1.schema.json",
+  "title": "forge.pioneer-verdict.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "verdict_id", "subject_id", "inference_stage",
+    "source_usable_probability", "physics_pass_probability", "recommended_action",
+    "reason_codes", "provider", "model_id", "model_version", "evaluation_id",
+    "threshold_version", "simulation"
+  ],
+  "properties": {
+    "schema_version": {"const": "forge.pioneer-verdict.v1"},
+    "verdict_id": {"type": "string"},
+    "subject_id": {"type": "string"},
+    "inference_stage": {"enum": ["PRE_HEAVY", "POST_REPLAY"]},
+    "source_usable_probability": {"type": "number", "minimum": 0, "maximum": 1},
+    "physics_pass_probability": {"type": "number", "minimum": 0, "maximum": 1},
+    "recommended_action": {"type": "string"},
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "next_capture_instruction": {"type": ["string", "null"]},
+    "provider": {"type": "string"},
+    "model_id": {"type": "string"},
+    "model_version": {"type": "string"},
+    "evaluation_id": {"type": "string"},
+    "threshold_version": {"type": "string"},
+    "simulation": {"type": "boolean"}
+  }
+}

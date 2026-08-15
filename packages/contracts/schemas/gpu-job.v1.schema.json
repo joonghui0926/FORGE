@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.example/schemas/gpu-job.v1.schema.json",
+  "title": "forge.gpu-job.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "job_id", "idempotency_key", "stage", "input_artifacts",
+    "config_uri", "container_image", "pipeline_version", "output_prefix"
+  ],
+  "properties": {
+    "schema_version": {"const": "forge.gpu-job.v1"},
+    "job_id": {"type": "string", "pattern": "^job_"},
+    "idempotency_key": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stage": {"enum": ["reconstruction", "retarget", "validate", "package"]},
+    "input_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "config_uri": {"type": "string", "pattern": "^r2://"},
+    "container_image": {"type": "string", "pattern": "@sha256:"},
+    "pipeline_version": {"type": "string", "minLength": 1},
+    "output_prefix": {"type": "string", "pattern": "^r2://"},
+    "attempt": {"type": "integer", "minimum": 1, "default": 1}
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "uri", "sha256"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "uri": {"type": "string", "pattern": "^(r2|file)://"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "media_type": {"type": "string"}
+      }
+    }
+  }
+}

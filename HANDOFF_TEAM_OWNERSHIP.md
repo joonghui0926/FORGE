@@ -1,6 +1,12 @@
 # FORGE Joonghui·Inseon 역할 및 실행 Handoff
 
 > 상태: 두 사람과 각 담당 에이전트의 실행 기준
+
+> 2026-08-15 scope override: 아래의 hand/human manipulation 설명은 한 adapter/profile의
+> 예시다. Joonghui core는 human, robot, teleop, simulation source와 manipulation,
+> locomotion, whole-body, mobile, navigation, aerial, articulated-machine, multi-robot
+> motion을 처리하는 generic Skill IR을 소유한다. 실행 가능한 최신 기준은
+> `docs/JOONGHUI_COMPILER.md`다.
 > 제품 기준: [제품·기술 아키텍처 Handoff](./HANDOFF_PRODUCT_AND_ARCHITECTURE.md)
 > UI 기준: [UI 디자인 시스템 Handoff](./HANDOFF_UI_DESIGN_SYSTEM.md)
 

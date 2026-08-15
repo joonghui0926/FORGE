@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.example/schemas/skill-ir.v1.schema.json",
+  "title": "forge.skill-ir.v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version", "skill_id", "source_demonstration_id", "source_actor_type",
+    "source_observation_type", "motion_family", "actor_model_uri", "joint_names",
+    "gravity_world_m_s2", "phases", "samples", "contacts", "coordinate_convention",
+    "validation_profile", "compiler_version"
+  ],
+  "properties": {
+    "schema_version": {"const": "forge.skill-ir.v1"},
+    "source_actor_type": {"enum": ["human", "robot", "mixed", "simulation", "unknown"]},
+    "source_observation_type": {
+      "enum": [
+        "monocular_video", "multiview_video", "robot_state", "teleop_log",
+        "simulation_trace", "multimodal"
+      ]
+    },
+    "motion_family": {
+      "enum": [
+        "manipulation", "bimanual", "locomotion", "whole_body",
+        "mobile_manipulation", "tool_use", "navigation", "aerial",
+        "articulated_machine", "multi_robot", "custom"
+      ]
+    },
+    "actor_model_uri": {"type": "string", "pattern": "^(r2|file)://"},
+    "joint_names": {"type": "array", "minItems": 1, "uniqueItems": true},
+    "gravity_world_m_s2": {
+      "type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}
+    },
+    "phases": {"type": "array", "minItems": 1},
+    "samples": {"type": "array", "minItems": 1},
+    "contacts": {"type": "array"},
+    "coordinate_convention": {"type": "string", "minLength": 1},
+    "validation_profile": {"type": "string", "minLength": 1}
+  }
+}
