@@ -14,13 +14,32 @@
 2. 문서에 없는 외부 서비스, 논문 기술, 데이터 포맷을 핵심 경로에 추가하지 않는다.
 3. 논문의 주장을 구현 완료 사실처럼 쓰지 않는다. 공개 코드가 없는 기술은 `paper-derived reimplementation`으로 표시한다.
 4. 실제로 실행되지 않은 단계는 `passed`로 기록하지 않는다. fixture와 mock은 이름과 UI에서 모두 `simulated`로 표시한다.
-5. 모든 산출물은 원본 사람 영상까지 역추적할 수 있어야 한다.
+5. 모든 산출물은 원본 physical-behavior source(사람 영상, robot state, teleop,
+   simulation 또는 multimodal capture)까지 역추적할 수 있어야 한다.
 6. 증폭은 단일 소스 demonstration이 물리 검증을 통과한 뒤에만 시작한다.
 7. 계약과 상태 머신을 먼저 고정하고, GPU와 웹을 그 계약에 맞춰 독립적으로 개발한다.
 
 ## 1. 한 문장 정의
 
-FORGE는 고객의 로봇 task 요구를 받아 Terac을 통해 목적에 맞는 인간 demonstration을 수집하고, RunPod GPU에서 이를 metric 4D hand-object interaction과 embodiment-neutral `Canonical Skill IR`로 복원한 뒤, 접촉 일관성·로봇 retargeting·물리 replay를 통과한 source만 증폭하여 **고객 소유의 학습 가능한 로봇 데이터셋**으로 납품하는 데이터 제조 회사다.
+FORGE는 고객의 로봇 task 요구를 받아 Terac 또는 고객 시스템에서 목적에 맞는
+physical-behavior source를 수집하고, RunPod GPU에서 이를 metric 4D
+actor-counterpart interaction과 embodiment-neutral `Canonical Skill IR`로 복원한 뒤,
+접촉 일관성·robot retargeting·motion-specific physics replay를 통과한 source만
+증폭하여 **고객 소유의 학습 가능한 로봇 데이터셋**으로 납품하는 데이터 제조 회사다.
+
+### 2026-08-15 전역 로봇 scope 규칙
+
+이 규칙이 이 문서 아래의 과거 manipulation 예시보다 우선한다. FORGE core는 손,
+사람, dexterous manipulation에 한정되지 않는다. source actor는 human, robot, mixed,
+simulation 또는 unknown일 수 있고 observation은 video, robot state, teleop log,
+simulation trace 또는 multimodal일 수 있다. motion family는 manipulation, bimanual,
+tool use, locomotion, whole body, mobile manipulation, navigation, aerial, articulated
+machine, multi-robot를 포함한다. `hand`, `MANO`, `object`라는 아래 설명은
+manipulation profile의 구체 예일 뿐 공통 schema나 제품 전체의 제한이 아니다.
+
+새 에이전트는 실제 구현 기준으로 `docs/JOONGHUI_COMPILER.md`와
+`src/forge/modules/skill_ir/models.py`를 함께 읽는다. target robot별 simulator와
+quality profile이 없는 motion family는 UI에서 production-ready로 표시하지 않는다.
 
 핵심 흐름은 다음과 같다.
 
@@ -32,8 +51,10 @@ flowchart LR
     D --> E["Render Workflows: durable orchestration"]
     E --> F["RunPod GPU: 4D reconstruction"]
     F --> G["Stable object-side contact + Skill IR"]
-    G --> H["Robot retargeting + physics replay"]
-    H --> I{"Source quality gate"}
+    G --> P1["Pioneer: feasibility + GPU/recollection priority"]
+    P1 --> H["Robot retargeting + physics replay"]
+    H --> P2["Pioneer: post-replay verdict + learning label"]
+    P2 --> I{"Deterministic + learned source quality gate"}
     I -- "insufficient" --> J["Band: diagnose coverage gap"]
     J --> C
     I -- "accepted" --> K["SE(3) augmentation / DemoGen-style generation"]
@@ -185,6 +206,7 @@ flowchart TB
         DB["Postgres source of truth"]
         WF["Render Workflows"]
         BAND["Band decision agents"]
+        PIONEER["Pioneer quality specialist"]
         PAY["Stripe"]
     end
     subgraph Data["Data plane"]
@@ -198,6 +220,8 @@ flowchart TB
     PAY --> API
     API --> WF
     WF --> BAND
+    WF --> PIONEER
+    PIONEER --> BAND
     WF --> GPU1
     WF --> GPU2
     WEB -- "presigned PUT/GET" --> R2
@@ -215,12 +239,12 @@ flowchart TB
 | Render | 핵심 | Next.js, FastAPI, Postgres, durable workflow execution | GPU inference 또는 대용량 media proxy |
 | Render Workflows | 핵심 | retry 가능한 pipeline DAG, fan-out/fan-in, 상태 전이 | incoming request server로 사용하지 않음 |
 | Band | 핵심 | acquisition 계획, 품질 실패 해석, recollection decision, operator summary | 작업 실행기 또는 DB source of truth |
+| Pioneer | 핵심 | 모든 capture/source의 learned usability·physics-pass 예측, 다음 촬영 지시 분류, 누적 label을 이용한 specialist model fine-tuning/evaluation/inference | deterministic physics/safety gate를 단독으로 대체하거나 raw PII 영상을 prompt로 전송 |
 | Cloudflare R2 | 핵심 | immutable raw/artifact/delivery object storage, presigned upload | 상태 머신과 사업 데이터 저장 |
 | RunPod | 핵심 | GPU container 실행, stage별 비동기 job | 제품 상태와 retry 정책의 권위자가 됨 |
 | Stripe | 핵심 | pilot 결제, webhook 기반 payment state | 결제 상태를 redirect만으로 확정 |
 | GitHub | 핵심 | 코드, schema, issue, review, immutable release tag | weight와 고객 원본 영상 저장 |
 | Linq | 선택 | 특정 결손을 보완하는 전문가 재촬영 요청 | 일반 Terac 흐름이 준비되기 전 필수 의존성화 |
-| Pioneer | 선택 | 충분한 pass/fail label 이후 learned QC | 초기에 근거 없는 자동 품질 판정 |
 | Superserve | 선택 | 고객 custom transform/export sandbox | 신뢰하지 못한 코드를 core worker에서 실행 |
 | Replay | 선택 | operator용 visual QA와 비교 replay | 수치 metric의 대체재 |
 
@@ -244,12 +268,14 @@ FORGE/
 ├── packages/
 │   ├── contracts/                 # JSON Schema/OpenAPI/generated clients
 │   ├── skill-ir/                  # Canonical Skill IR types and validators
+│   ├── quality-model/             # Pioneer feature/label/evaluation policy
 │   ├── db/                        # migrations and repository layer
 │   ├── ui/                        # tokens and accessible primitives
 │   └── observability/             # events, metrics, error taxonomy
 ├── integrations/
 │   ├── terac/
 │   ├── band/
+│   ├── pioneer/
 │   ├── cloudflare/
 │   ├── runpod/
 │   ├── stripe/
@@ -393,7 +419,50 @@ Band는 자연어 조언만 남기지 않고 검증 가능한 decision을 반환
 
 Band는 지표와 evidence URI만 읽는다. 개인 식별 영상 원본을 LLM prompt에 직접 넣지 않는다.
 
-### 5.5 Canonical Skill IR
+### 5.5 Pioneer quality verdict contract
+
+Pioneer는 RunPod가 계산한 구조화 metric, capture 조건, deterministic gate 결과와 operator label을 사용해 specialist quality model을 학습·평가·서빙한다. 초기에는 Pioneer base/open-weight model을 사용하고, 실제 label이 축적되면 source lineage 단위로 train/validation을 분리해 fine-tune한다.
+
+```json
+{
+  "schema_version": "forge.pioneer-verdict.v1",
+  "verdict_id": "pvr_...",
+  "subject_type": "source_demonstration",
+  "subject_id": "demo_...",
+  "inference_stage": "POST_REPLAY",
+  "input_feature_version": "forge-qc-features-v1",
+  "input_artifact_ids": ["art_metrics_..."],
+  "model": {
+    "provider": "pioneer",
+    "project_id": "forge-quality",
+    "model_id": "base-or-training-job-id",
+    "model_version": "immutable-deployment-version"
+  },
+  "predictions": {
+    "source_usable_probability": 0.74,
+    "physics_pass_probability": 0.61,
+    "recommended_action": "RECOLLECT_GENERAL",
+    "reason_codes": ["OBJECT_OCCLUDED_AT_CONTACT"],
+    "next_capture_instruction": "record from the front-right and keep the cap edge visible"
+  },
+  "calibration": {
+    "evaluation_id": "pioneer-eval-id",
+    "decision_threshold_version": "pioneer-threshold-v1"
+  },
+  "created_at": "RFC3339 timestamp"
+}
+```
+
+규칙:
+
+- Pioneer는 모든 production capture/source에 호출되는 핵심 stage다.
+- hard constraint, collision, penetration, rights, checksum과 실제 physics replay 결과는 deterministic gate가 권위다.
+- Pioneer verdict는 GPU 우선순위, operator review, Band recollection decision과 다음 촬영 지시에 필수 입력이다.
+- Pioneer 장애 시 production workflow는 `LEARNED_QC_PENDING`에서 대기한다. 조용히 모델을 건너뛰지 않는다. 긴급 manual override는 actor·이유·model outage evidence를 남긴다.
+- raw video, 얼굴, 작업자 PII를 Pioneer text inference에 전송하지 않는다. pseudonymous ID와 구조화 metric/label만 사용한다.
+- fine-tuned model은 held-out evaluation에서 사전 합의한 precision, recall, calibration 기준을 통과해야 champion으로 승격된다.
+
+### 5.6 Canonical Skill IR
 
 Skill IR은 원본 카메라나 특정 robot joint에 종속되지 않는 object-centric representation이다.
 
@@ -438,7 +507,7 @@ Skill IR은 원본 카메라나 특정 robot joint에 종속되지 않는 object
 
 `object_surface_point`는 canonical object 좌표의 normalized surface coordinate 또는 vertex/barycentric reference로 구현한다. 단순 world-space fingertip 점을 canonical contact로 저장하지 않는다.
 
-### 5.6 Delivery manifest
+### 5.7 Delivery manifest
 
 ```json
 {
@@ -470,11 +539,14 @@ stateDiagram-v2
     ACQUIRING --> PRE_QC
     PRE_QC --> PROCESSING
     PROCESSING --> CONTACTING
-    CONTACTING --> RETARGETING
+    CONTACTING --> LEARNED_QC_TRIAGE
+    LEARNED_QC_TRIAGE --> RECOLLECTING: predicted unusable or low observability
+    LEARNED_QC_TRIAGE --> RETARGETING: proceed to heavy verification
     RETARGETING --> VALIDATING
-    VALIDATING --> RECOLLECTING: insufficient
+    VALIDATING --> LEARNED_QC
+    LEARNED_QC --> RECOLLECTING: insufficient
     RECOLLECTING --> ACQUIRING
-    VALIDATING --> AMPLIFYING: source accepted
+    LEARNED_QC --> AMPLIFYING: source accepted
     AMPLIFYING --> BATCH_QC
     BATCH_QC --> AMPLIFYING: replace rejected variants
     BATCH_QC --> PACKAGING: delivery threshold met
@@ -483,7 +555,7 @@ stateDiagram-v2
     DRAFT --> CANCELLED
     PAID --> CANCELLED
     PROCESSING --> FAILED: unrecoverable
-    VALIDATING --> FAILED: budget or feasibility boundary
+    LEARNED_QC --> FAILED: budget or feasibility boundary
 ```
 
 불변 조건:
@@ -493,6 +565,7 @@ stateDiagram-v2
 - retry가 새 source/episode로 집계되면 안 된다.
 - 모든 artifact에는 `sha256`, schema version, producer version, parent artifact IDs가 있다.
 - `AMPLIFYING` 전이는 `source_validation.accepted == true` 없이는 불가능하다.
+- 모든 production source에는 versioned `pioneer-verdict`가 있어야 한다. 단, Pioneer는 deterministic hard fail을 pass로 바꿀 수 없다.
 - `READY` 전이는 권리, checksum, quality, export validation이 모두 통과해야 한다.
 - manual override는 actor, 이유, 전후 값, evidence를 append-only audit log에 남긴다.
 - 상태를 역행시키지 않는다. 재작업은 새 attempt 또는 새 entity로 표현한다.
@@ -508,6 +581,10 @@ Postgres의 최소 entity는 다음과 같다.
 | `capture_batches` | acquisition/recollection 지시 | order + batch sequence |
 | `demonstrations` | 사람 submission과 권리 | capture id, raw sha256 |
 | `qc_runs` | 단계별 metric/reason | subject + stage + config hash |
+| `qc_feature_sets` | Pioneer 입력용 비식별 구조화 feature | subject + feature version |
+| `model_predictions` | Pioneer verdict와 model/evaluation lineage | subject + model version |
+| `model_training_examples` | capture/physics/operator 결과에서 생성된 label | subject + label version |
+| `model_registry` | Pioneer base/fine-tuned champion·challenger | provider + model/deployment version |
 | `gpu_jobs` | async RunPod attempt | idempotency key + attempt |
 | `artifacts` | R2 object metadata | tenant + sha256 + kind |
 | `provenance_edges` | parent-child lineage | parent + child + relation |
@@ -658,7 +735,30 @@ source demonstration은 다음 gate를 모두 통과해야 한다.
 - 작은 초기 pose/force perturbation에서 robustness가 최소 기준을 만족한다.
 - 모든 artifact와 model version provenance가 완전하다.
 
-실패 시 Band의 `QC Diagnostician`은 반드시 다음 중 하나를 고른다.
+deterministic validation 결과는 다음 Pioneer stage의 label과 feature가 된다. hard fail은 Pioneer가 뒤집을 수 없다.
+
+### 8.8 Pioneer learned quality loop
+
+Pioneer는 핵심 경로에서 두 역할을 한다.
+
+**Runtime specialist**
+
+1. `PRE_HEAVY` 호출은 capture protocol, viewpoint/object bin, pre-QC, reconstruction/contact와 fast-retarget metric을 `forge-qc-features-v1`로 만들어 source usability와 physics-pass 가능성을 예측한다. GPU 우선순위를 정하고 명백한 결손은 heavy replay 전에 recollection review로 보낸다.
+2. `POST_REPLAY` 호출은 실제 retarget/physics metric을 추가해 reason code, recommended action과 다음 촬영 지시를 생성한다. 실제 physics pass/fail 자체는 prediction이 아니라 deterministic label이다.
+3. schema·model version·evaluation ID를 검증한 verdict만 저장한다.
+4. Band의 `QC Diagnostician`은 deterministic result와 두 Pioneer verdict를 함께 받아 최종 workflow action을 고른다.
+
+**Continual learning**
+
+1. 실제 physics result, operator adjudication, recollection recovery, 나중에 확보되는 policy result를 ground-truth label 후보로 적재한다.
+2. 같은 source, performer, object instance의 leakage를 막는 group split을 만든다.
+3. Pioneer dataset upload → open-weight model fine-tuning → held-out evaluation을 실행한다.
+4. champion보다 합의된 precision/recall/calibration을 개선한 model만 승격한다.
+5. 모든 prediction은 당시 model version을 보존해 재현 가능해야 한다.
+
+초기 label이 적을 때는 Pioneer verdict를 불확실성/우선순위와 촬영 지시 분류에 사용하고, deterministic physics gate를 대체하지 않는다. label이 늘어도 안전·권리·실제 physics hard constraint의 권위는 바뀌지 않는다.
+
+Pioneer와 deterministic 결과를 받은 Band의 `QC Diagnostician`은 반드시 다음 중 하나를 고른다.
 
 - `REPROCESS_WITH_CONFIG`: 이미 있는 관측으로 해결 가능
 - `RECONSTRUCT_ASSET`: object mesh/scale 문제
@@ -667,7 +767,7 @@ source demonstration은 다음 gate를 모두 통과해야 한다.
 - `OPERATOR_REVIEW`: 자동 판정 confidence 부족
 - `STOP_INFEASIBLE`: 현재 범위에서 해결 불가능
 
-### 8.8 Amplification
+### 8.9 Amplification
 
 accepted source만 다음 variation을 생성할 수 있다.
 
@@ -679,7 +779,7 @@ accepted source만 다음 variation을 생성할 수 있다.
 
 증폭 개수는 성공이 아니다. `generated`, `validated`, `delivered`를 별도로 집계한다. 하나의 source에서 나온 episode끼리는 train/validation leakage가 없도록 lineage group 단위로 split한다.
 
-### 8.9 Batch QC와 packaging
+### 8.10 Batch QC와 packaging
 
 Batch QC는 per-episode gate 외에도 다음을 검사한다.
 
@@ -844,18 +944,28 @@ QUALITY_INSUFFICIENT         no infra retry; route to decision engine
 LICENSE_BLOCKED              terminal until approved
 ```
 
-## 11. Band, Render, Terac의 실제 의존 관계
+## 11. Band, Pioneer, Render, Terac의 실제 의존 관계
 
 Band는 다음 agent role을 가진다.
 
 | Band role | 입력 | 출력 | 제품에서 제거했을 때 깨지는 것 |
 |---|---|---|---|
 | Dataset Architect | order contract, available worker classes | structured acquisition plan | 주문이 Terac task로 자동 변환되지 않음 |
-| Collection Controller | coverage matrix, accepted/rejected captures | next batch or stop decision | 결손 중심 active acquisition이 사라짐 |
-| QC Diagnostician | metric, reason code, evidence pointers | reprocess/recollect/operator decision | 단순 pass/fail만 남아 품질 회복 loop가 깨짐 |
+| Collection Controller | coverage matrix, accepted/rejected captures, Pioneer yield prediction | next batch or stop decision | 결손 중심 active acquisition이 사라짐 |
+| QC Diagnostician | deterministic metric, Pioneer verdict, reason code, evidence pointers | reprocess/recollect/operator decision | learned quality와 실제 물리를 결합한 회복 loop가 깨짐 |
 | Delivery Analyst | aggregate QC, provenance completeness | operator/customer summary | dataset card와 limitation 설명이 수작업화 |
 
 Band의 출력은 항상 schema validation을 거친다. Band prompt 변경도 versioned policy 변경이다.
+
+Pioneer는 `Quality Specialist`로서 pipeline의 필수 모델 계층이다.
+
+- base/open-weight model inference로 모든 capture/source의 구조화 verdict 생성
+- 실제 physics/operator/recollection 결과를 versioned training dataset으로 축적
+- Pioneer API로 fine-tuning job을 시작하고 held-out evaluation 수행
+- champion/challenger model registry와 immutable deployment version 유지
+- Band에 learned verdict를 전달하되 deterministic hard gate는 변경하지 않음
+
+Pioneer를 제거하면 GPU queue prioritization, learned usability/physics-pass 예측, 다음 촬영 instruction과 continual quality improvement가 작동하지 않으므로 production workflow는 완성되지 않는다.
 
 Render Workflow는 실제 effect를 수행한다.
 
@@ -863,6 +973,7 @@ Render Workflow는 실제 effect를 수행한다.
 - R2 object 존재와 checksum 확인
 - RunPod job 제출/조회
 - fan-out reconstruction과 fan-in aggregate
+- Pioneer inference, training/evaluation job polling, verdict schema validation
 - retry/backoff와 dead-letter
 - DB state transaction
 - Band decision 요청과 결과 적용
@@ -915,6 +1026,10 @@ assigned worker
 - `contact_observability_rate`
 - `source_physics_pass_rate`
 - `recollection_recovery_rate`
+- `pioneer_usable_precision_recall`
+- `pioneer_physics_pass_brier_score`
+- `pioneer_abstention_rate`
+- `pioneer_recollection_lift`
 - `generated_episode_acceptance_rate`
 - `cost_per_accepted_source`
 - `cost_per_validated_episode`
@@ -968,6 +1083,10 @@ RUNPOD_RECONSTRUCTION_ENDPOINT_ID
 RUNPOD_RETARGET_ENDPOINT_ID
 RENDER_WORKFLOW_API_KEY
 BAND_API_KEY
+PIONEER_API_KEY
+PIONEER_PROJECT_ID
+PIONEER_MODEL_ID
+PIONEER_MODEL_EVALUATION_ID
 TERAC_API_KEY
 TERAC_WEBHOOK_SECRET
 STRIPE_SECRET_KEY
@@ -984,6 +1103,7 @@ client-visible prefix는 의도적으로 공개 가능한 값에만 사용한다
 ### Gate 0 — Contracts
 
 - JSON Schema/OpenAPI가 위 entity를 표현한다.
+- Pioneer feature/verdict schema와 base-model fixture가 검증된다.
 - TypeScript와 Python generated type이 동일 fixture를 통과한다.
 - state transition과 idempotency test가 있다.
 - UI token과 route skeleton이 연결된다.
@@ -1012,6 +1132,7 @@ client-visible prefix는 의도적으로 공개 가능한 값에만 사용한다
 ### Gate 4 — Active recollection
 
 - 실패 metric이 Band의 schema-valid `RECOLLECT`를 만든다.
+- deterministic metric과 versioned Pioneer verdict가 함께 Band decision의 evidence로 저장된다.
 - Render가 새 Terac batch를 만들고 original decision과 연결한다.
 - 개선된 capture가 같은 source lineage group에 합쳐지지 않고 새 source로 처리된다.
 - before/after metric이 실제 데이터로 계산된다.
@@ -1019,6 +1140,7 @@ client-visible prefix는 의도적으로 공개 가능한 값에만 사용한다
 ### Gate 5 — Paid delivery
 
 - Stripe test 또는 허용된 live pilot 결제가 verified webhook을 통해 주문을 `PAID`로 바꾼다.
+- 모든 delivered source에 deterministic quality result와 Pioneer model/evaluation lineage가 있다.
 - accepted source만 amplification에 들어간다.
 - export loader smoke test, quality threshold, rights, checksums가 통과한다.
 - 고객 download에는 signed access와 immutable delivery version이 있다.
@@ -1077,4 +1199,7 @@ client-visible prefix는 의도적으로 공개 가능한 값에만 사용한다
 - C2Dex paper: <https://arxiv.org/abs/2608.07045>
 - C2Dex project: <https://k-jie.github.io/C2Dex/>
 - Render Workflows: <https://render.com/docs/workflows>
+- Pioneer API overview: <https://docs.pioneer.ai/api-reference/overview>
+- Pioneer training jobs: <https://docs.pioneer.ai/api-reference/training-jobs>
+- Pioneer evaluations: <https://docs.pioneer.ai/api-reference/evaluations>
 - Toss design writings: <https://toss.tech/category/design>

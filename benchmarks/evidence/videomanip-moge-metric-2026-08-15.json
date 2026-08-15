@@ -1,0 +1,46 @@
+{
+  "acceptance_state": "metric_reconstruction_candidate_requires_calibration_and_target_replay",
+  "adapter_id": "videomanip-moge-metric-diagnostic-v1",
+  "checkpoint_revision": "b135031bae30b5ac2ae141a0e68717795ce38340",
+  "cx_range_px": [
+    640.0,
+    640.0
+  ],
+  "cy_range_px": [
+    360.0,
+    360.0
+  ],
+  "depth_dtype": "uint16",
+  "depth_map_count": 148,
+  "depth_mm_max": 1664,
+  "depth_mm_median": 731.0,
+  "depth_mm_min": 226,
+  "depth_mm_p95": 1319.0,
+  "depth_positive_fraction": 1.0,
+  "depth_saturation_fraction": 0.0,
+  "frame_count": 148,
+  "fx_cv": 0.03537588833371712,
+  "fx_mean_px": 861.8027628305796,
+  "fy_cv": 0.03537588894721889,
+  "fy_mean_px": 861.8027661297772,
+  "height_px": 720,
+  "intrinsics_count": 148,
+  "invalid_depth_count": 0,
+  "invalid_intrinsics_count": 0,
+  "missing_depth_count": 0,
+  "missing_intrinsics_count": 0,
+  "moge_revision": "925b8ed835a7a9cdb7578ba15c658a0afc969030",
+  "rejection_reasons": [
+    "no independent metric-depth or camera-calibration ground truth",
+    "no target-robot state/action trajectory",
+    "no contact and phase labels",
+    "no exact-target closed-loop replay evidence"
+  ],
+  "robot_ready_accepted": false,
+  "schema_version": "forge.videomanip-metric-diagnostic.v1",
+  "simulation": false,
+  "source_video_sha256": "5f2d2ff7f2164f8e108308742c5a1056015ce04b67f91f8e760003f062e6db94",
+  "structural_pass": true,
+  "videomanip_revision": "9d0f286af35d73f4252d115d968e0a9c06542b9c",
+  "width_px": 1280
+}

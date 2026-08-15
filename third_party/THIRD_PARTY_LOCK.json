@@ -1,4 +1,151 @@
 {
   "_comment": "All third-party dependencies must be registered here before use in production. 'pending' commercial_use_review is a production gate failure.",
-  "dependencies": []
+  "schema_version": "forge.third-party-lock.v1",
+  "generated_for": "FORGE compiler 0.1.0",
+  "dependencies": [
+    {
+      "name": "VideoManip",
+      "source": "https://github.com/hychen-naza/VideoManip",
+      "revision": "9d0f286af35d73f4252d115d968e0a9c06542b9c",
+      "capabilities": [
+        "metric_depth_and_intrinsics",
+        "active_region_segmentation",
+        "rigid_counterpart_pose",
+        "hand_or_effector_kinematics",
+        "gravity_estimation"
+      ],
+      "production_status": "evaluation_only",
+      "reason": "Repository revision, weights, transitive licenses, and commercial use require review."
+    },
+    {
+      "name": "MoGe 2",
+      "source": "https://github.com/microsoft/MoGe",
+      "revision": "925b8ed835a7a9cdb7578ba15c658a0afc969030",
+      "model_source": "https://huggingface.co/Ruicheng/moge-2-vitl-normal",
+      "model_revision": "b135031bae30b5ac2ae141a0e68717795ce38340",
+      "model_sha256": "280741fd09bc3f403ccff9967784c2a391b52d2c0742ae3efdb21d9f90cc1a01",
+      "model_size_bytes": 1323815904,
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Official code and exact model bytes are pinned; monocular metric accuracy and DINOv2/model-card commercial terms still require target-domain review."
+    },
+    {
+      "name": "utils3d",
+      "source": "https://github.com/EasternJournalist/utils3d",
+      "revision": "3fab839f0be9931dac7c8488eb0e1600c236e183",
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive dependency installed by the pinned MoGe revision; license and deployment review remain open."
+    },
+    {
+      "name": "pipeline",
+      "source": "https://github.com/EasternJournalist/pipeline",
+      "revision": "866f059d2a05cde05e4a52211ec5051fd5f276d6",
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive dependency installed by the pinned MoGe revision; license and deployment review remain open."
+    },
+    {
+      "name": "MANO",
+      "source": "external licensed asset via MANO_MODEL_DIR",
+      "revision": "v1.2",
+      "capabilities": ["hand_or_effector_kinematics"],
+      "production_status": "evaluation_only",
+      "reason": "Model files are locally held and must never be committed or redistributed."
+    },
+    {
+      "name": "Do As I Do",
+      "source": "https://github.com/malik-group/do-as-i-do",
+      "revision": "824591b808c342b20079c3b4198a8c2bdf88c74e",
+      "capabilities": [
+        "metric_depth_and_intrinsics",
+        "active_region_segmentation",
+        "rigid_counterpart_pose",
+        "hand_or_effector_kinematics",
+        "physics_heavy_retarget"
+      ],
+      "production_status": "evaluation_only",
+      "reason": "Top-level code is MIT; every submodule, model weight, and dataset term still needs transitive review."
+    },
+    {
+      "name": "MuJoCo Warp",
+      "source": "https://github.com/google-deepmind/mujoco_warp",
+      "revision": "5d5a6450a7699e695f1767efd7715251713da2ac",
+      "capabilities": ["gpu_physics_optimization"],
+      "production_status": "evaluation_only",
+      "reason": "Pinned by Do As I Do together with warp-lang 1.10.1 and MuJoCo 3.4.0; deployment and transitive terms require review."
+    },
+    {
+      "name": "GMR",
+      "source": "https://github.com/YanjieZe/GMR",
+      "revision": "bb1bbe40774794fceb2a7c579a3464a28e68c844",
+      "capabilities": ["whole_body_retarget"],
+      "production_status": "evaluation_only",
+      "reason": "MIT repository; robot meshes, motion datasets, and target-specific configuration require separate review."
+    },
+    {
+      "name": "SMPL-X Python library",
+      "source": "https://github.com/vchoutas/smplx",
+      "revision": "1265df7ba545e8b00f72e7c557c766e15c71632f",
+      "capabilities": ["whole_body_model_loading"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive GMR dependency observed on the A40 evaluation pod; model assets and their license remain external."
+    },
+    {
+      "name": "ASAP",
+      "source": "https://github.com/LeCAR-Lab/ASAP",
+      "revision": "df5320cc47dd8cad97961bdfabfe402dd62ad999",
+      "capabilities": ["whole_body_physics_alignment"],
+      "production_status": "evaluation_only",
+      "reason": "Research stack has simulator, dataset, robot SDK, and model-weight dependencies requiring review."
+    },
+    {
+      "name": "InterMimic",
+      "source": "https://github.com/Sirui-Xu/InterMimic",
+      "revision": "60d6d6e0895a308ff8dc8f4c53af211b739cd5e7",
+      "capabilities": ["whole_body_object_interaction"],
+      "production_status": "evaluation_only",
+      "reason": "Used as a whole-body interaction benchmark/adapter candidate; transitive terms and robot integration remain gated."
+    },
+    {
+      "name": "FORGE stable-contact compiler",
+      "source": "src/forge/modules/stable_contact",
+      "revision": "forge-contact-v1",
+      "capabilities": ["environment_contact_candidates"],
+      "production_status": "approved",
+      "reason": "FORGE-owned paper-derived implementation; still requires profile validation."
+    },
+    {
+      "name": "FORGE direct robot-state compiler",
+      "source": "src/forge/modules/reconstruction",
+      "revision": "forge-direct-state-v1",
+      "capabilities": [
+        "robot_state_normalization",
+        "clock_synchronization",
+        "source_kinematic_calibration"
+      ],
+      "production_status": "approved",
+      "reason": "FORGE-owned contract path; each source robot still requires a calibration certificate."
+    },
+    {
+      "name": "Aerial six-DoF source adapter",
+      "source": "UNRESOLVED",
+      "revision": "UNRESOLVED",
+      "capabilities": ["six_dof_state_estimation"],
+      "production_status": "blocked",
+      "reason": "Provider and per-platform flight validation are not pinned."
+    },
+    {
+      "name": "Whole-body metric reconstruction adapter",
+      "source": "UNRESOLVED",
+      "revision": "UNRESOLVED",
+      "capabilities": [
+        "dynamic_camera_estimation",
+        "whole_body_kinematics",
+        "scene_geometry"
+      ],
+      "production_status": "blocked",
+      "reason": "A commercially usable, benchmarked implementation has not yet been pinned."
+    }
+  ]
 }

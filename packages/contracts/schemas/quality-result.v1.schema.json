@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.example/schemas/quality-result.v1.schema.json",
+  "title": "forge.quality-result.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "subject_id", "accepted", "hard_failures", "reason_codes",
+    "scores", "rights_verified", "checksums_verified", "provider", "policy_version",
+    "simulation"
+  ],
+  "properties": {
+    "schema_version": {"const": "forge.quality-result.v1"},
+    "subject_id": {"type": "string", "minLength": 1},
+    "accepted": {"type": "boolean"},
+    "hard_failures": {"type": "array", "items": {"type": "string"}},
+    "reason_codes": {"type": "array", "items": {"type": "string"}},
+    "scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "replay": {"type": ["object", "null"]},
+    "rights_verified": {"type": "boolean"},
+    "checksums_verified": {"type": "boolean"},
+    "provider": {"type": "string"},
+    "policy_version": {"type": "string"},
+    "evidence_artifact_ids": {"type": "array", "items": {"type": "string"}},
+    "simulation": {"type": "boolean"}
+  }
+}
