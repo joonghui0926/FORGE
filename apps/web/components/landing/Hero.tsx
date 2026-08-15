@@ -10,8 +10,7 @@ export function Hero() {
         Validated robot-ready datasets out.
       </h1>
       <p className="mt-6 text-xl text-forge-ink-muted max-w-[56ch]">
-        FORGE turns physical demonstrations into physics-validated datasets
-        ready for robot learning — no infrastructure required.
+        Physics-validated robot datasets from human demos.
       </p>
       <div className="mt-10">
         <Link href="/auth/signin?callbackUrl=/orders/new">
