@@ -7,10 +7,13 @@ to redistribute its code, weights, models, or datasets.
 |---|---|---|---|
 | VideoManip and transitive models | Manipulation reconstruction adapter | Evaluation only; exact commit and all transitive terms unresolved | Legal/technical review and digest-pinned image |
 | MoGe 2 + ViT-L checkpoint | Monocular metric depth and camera intrinsics | Official Microsoft source, HF revision, 1.323 GB model and SHA-256 pinned; code/model chain remains evaluation only | Validate metric scale on calibrated FORGE scenes and approve DINOv2/model-card terms |
+| SAM 2.1 Large | Prompted object masks in the VideoManip worker | Official source revision and 898 MB checkpoint hash pinned; evaluation only | Target-domain segmentation benchmark and legal approval |
+| HaMeR + ViTPose + Detectron2 ViTDet | MANO hand joints and mesh observations | Exact revisions and 6.73 GB of checkpoint hashes pinned; evaluation only; private MANO volume required | Commercial/transitive review, held-out hand benchmark and licensed MANO injection |
 | C2Dex | Algorithmic reference for stable contact | FORGE reimplements the described geometry; no C2Dex code is vendored | Benchmark FORGE implementation on held-out tasks |
 | Do As I Do / HaWoR path | Heavy-retarget comparison | Evaluation only; redistribution/commercial terms unresolved | Replace or obtain written commercial rights |
 | MANO v1.2 | Hand model asset loaded from `MANO_MODEL_DIR` | Local licensed asset; not committed | Confirm commercial terms and inject as a runtime secret volume |
 | GMR | Whole-body human/humanoid motion retargeting | MIT top-level repository pinned; dependent robot assets/datasets separate | Per-target asset review and held-out retarget/replay benchmark |
+| TWIST general motion tracker | G1 25-DoF closed-loop policy and MuJoCo sim2sim replay | MIT code, exact revision, checkpoint and target XML hashes pinned; FORGE public run passed sim2sim only | Checkpoint/asset review, robustness suite and controlled physical G1 acceptance |
 | ASAP | Whole-body physics alignment and sim-to-real candidate | Evaluation only | Dependency/weight/robot SDK review and real-robot evidence |
 | InterMimic | Whole-body object-interaction benchmark/candidate | Evaluation only | Dependency review and FORGE profile benchmark |
 | Pioneer | Structured learned QC | Fixture only in this repository | Authenticated provider schema, evaluation, and champion promotion |

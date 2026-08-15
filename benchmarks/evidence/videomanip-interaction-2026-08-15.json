@@ -1,0 +1,69 @@
+{
+  "acceptance_state": "metric_interaction_candidate_requires_world_and_target_replay",
+  "adapter_id": "videomanip-metric-interaction-v1",
+  "ambiguous_actor_frame_count": 0,
+  "contact_candidate_frame_count": 144,
+  "fps": 30.0,
+  "frame_count": 148,
+  "grasp_mask_area_px_median": 16909.0,
+  "grasp_target_distance_m_max": 0.4090714156627655,
+  "grasp_target_distance_m_median": 0.352375328540802,
+  "grasp_target_distance_m_min": 0.19722770154476166,
+  "hamer_checkpoint_sha256": "e5cc06f294d88a92dee24e603480aab04de532b49f0e08200804ee7d90e16f53",
+  "hamer_revision": "091de2a07b5414a2f9373d2bec368b8c979883b6",
+  "hand_grasp_distance_m_median": 0.007618635427206755,
+  "hand_grasp_distance_m_p05": 0.0025478252209722996,
+  "hand_grasp_distance_m_p95": 0.01723509095609188,
+  "hand_joint_count": 21,
+  "height_px": 720,
+  "output_npz_sha256": "ca4bef79eeb3a7265ba2a264f31ecd49818d41372d57ec889f80ee1f4e205962",
+  "phase_labels": [
+    "unobserved",
+    "free_motion",
+    "grasp_hold",
+    "transport",
+    "target_interaction_hold",
+    "target_interaction_motion"
+  ],
+  "phase_segments": [
+    {
+      "end_frame": 3,
+      "label": "free_motion",
+      "phase_id": "phase_0000",
+      "start_frame": 0
+    },
+    {
+      "end_frame": 122,
+      "label": "transport",
+      "phase_id": "phase_0001",
+      "start_frame": 4
+    },
+    {
+      "end_frame": 147,
+      "label": "target_interaction_motion",
+      "phase_id": "phase_0002",
+      "start_frame": 123
+    }
+  ],
+  "rejection_reasons": [
+    "camera-to-world transform and gravity are not independently calibrated",
+    "object orientation and rigid 6-DoF pose are not reconstructed",
+    "contact candidates lack opposed surface-normal validation",
+    "no target robot model, controller, action trajectory, or closed-loop replay"
+  ],
+  "robot_ready_accepted": false,
+  "sam2_checkpoint_sha256": "2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318",
+  "sam2_revision": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+  "schema_version": "forge.videomanip-interaction-diagnostic.v1",
+  "simulation": false,
+  "source_video_sha256": "5f2d2ff7f2164f8e108308742c5a1056015ce04b67f91f8e760003f062e6db94",
+  "structural_pass": true,
+  "target_mask_area_px_median": 29820.5,
+  "valid_grasp_mask_frame_count": 148,
+  "valid_hand_frame_count": 148,
+  "valid_target_mask_frame_count": 148,
+  "videomanip_revision": "9d0f286af35d73f4252d115d968e0a9c06542b9c",
+  "vitpose_checkpoint_sha256": "b0555e1e2392e6a2be2d9265368f344d70ccbfd656ad480aa5c1de2e604519c9",
+  "vitpose_revision": "d5216452796c90c6bc29f5c5ec0bdba94366768a",
+  "width_px": 1280
+}

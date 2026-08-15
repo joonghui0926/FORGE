@@ -1,0 +1,18 @@
+{
+  "schema_version": "forge.r2-artifact-receipts.v1",
+  "round_trip_verified": true,
+  "artifacts": [
+    {
+      "kind": "videomanip_interaction_candidate",
+      "uri": "r2://forge-dev/evaluation/videomanip/interaction/ca4bef79eeb3a7265ba2a264f31ecd49818d41372d57ec889f80ee1f4e205962.npz",
+      "sha256": "ca4bef79eeb3a7265ba2a264f31ecd49818d41372d57ec889f80ee1f4e205962",
+      "size_bytes": 44547
+    },
+    {
+      "kind": "unitree_g1_robot_action_accepted",
+      "uri": "r2://forge-dev/validated/twist/unitree-g1/e6b967ca42acb296c57180a7e54e916722c3912108271fdf0dececbff120db3d.npz",
+      "sha256": "e6b967ca42acb296c57180a7e54e916722c3912108271fdf0dececbff120db3d",
+      "size_bytes": 670790
+    }
+  ]
+}

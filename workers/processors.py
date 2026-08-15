@@ -10,6 +10,7 @@ import tarfile
 from forge.adapters.papers.do_as_i_do_replay import DoAsIDoReplayEvaluator
 from forge.adapters.papers.gmr_headless import GMRHeadlessRunner
 from forge.adapters.papers.runners import DoAsIDoAdapter, PipelineExecution, VideoManipAdapter
+from forge.adapters.papers.twist_replay import TWISTG1ReplayEvaluator
 from forge.contracts.models import GPUJobRequest, canonical_json
 from forge.integrations.runpod.handler import ProcessorOutput
 
@@ -28,6 +29,8 @@ class PaperPipelineProcessor:
                 return self._run_do_as_i_do_replay(document, inputs, workspace, request)
             if adapter_id == GMRHeadlessRunner.adapter_id:
                 return self._run_gmr_headless(document, inputs, workspace, request)
+            if adapter_id == TWISTG1ReplayEvaluator.adapter_id:
+                return self._run_twist_replay(document, inputs, workspace, request)
             if adapter_id == VideoManipAdapter.adapter_id:
                 execution = self._run_videomanip(document, inputs, workspace)
             elif adapter_id == DoAsIDoAdapter.adapter_id:
@@ -140,6 +143,57 @@ class PaperPipelineProcessor:
                 kind="physics_replay_diagnostic",
                 filename="do_as_i_do_replay.json",
                 data=(canonical_json(report) + "\n").encode("utf-8"),
+            ),
+        )
+
+    def _run_twist_replay(
+        self,
+        document: dict[str, object],
+        inputs: dict[str, bytes],
+        workspace: Path,
+        request: GPUJobRequest,
+    ) -> tuple[ProcessorOutput, ...]:
+        replay_root = workspace / "twist_replay"
+        replay_root.mkdir()
+        trajectory_path = replay_root / "gmr_trajectory.npz"
+        action_path = replay_root / "twist_g1_action.npz"
+        trajectory_path.write_bytes(self._select_input(document, inputs))
+        model_path = Path(
+            os.environ.get(
+                "TWIST_G1_MODEL",
+                "/opt/vendor/TWIST/assets/g1/g1_sim2sim_with_wrist_roll.xml",
+            )
+        )
+        policy_path = Path(
+            os.environ.get(
+                "TWIST_G1_POLICY",
+                "/opt/vendor/TWIST/assets/twist_general_motion_tracker.pt",
+            )
+        )
+        result = TWISTG1ReplayEvaluator().evaluate(
+            trajectory_path,
+            model_path,
+            policy_path,
+            action_path,
+            source_start_frame=int(document["source_start_frame"]),
+            source_end_frame_exclusive=int(document["source_end_frame_exclusive"]),
+            twist_revision=str(document["twist_revision"]),
+            device=str(document.get("device", "cuda")),
+        )
+        report = result.to_dict()
+        report["job_id"] = request.job_id
+        state = "accepted" if result.robot_ready_accepted else "rejected"
+        return (
+            ProcessorOutput(
+                kind=f"robot_replay_{state}",
+                filename="twist_g1_replay.json",
+                data=(canonical_json(report) + "\n").encode("utf-8"),
+            ),
+            ProcessorOutput(
+                kind=f"robot_action_{state}",
+                filename="twist_g1_action.npz",
+                data=action_path.read_bytes(),
+                media_type="application/octet-stream",
             ),
         )
 

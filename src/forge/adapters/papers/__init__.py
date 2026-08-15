@@ -14,6 +14,14 @@ from forge.adapters.papers.videomanip_validation import (
     VideoManipMetricDiagnostic,
     VideoManipMetricEvaluator,
 )
+from forge.adapters.papers.videomanip_interaction import (
+    VideoManipInteractionCompiler,
+    VideoManipInteractionDiagnostic,
+)
+from forge.adapters.papers.twist_replay import (
+    TWISTG1ReplayEvaluator,
+    TWISTReplayDiagnostic,
+)
 
 __all__ = [
     "DoAsIDoAdapter",
@@ -28,4 +36,8 @@ __all__ = [
     "VideoManipAdapter",
     "VideoManipMetricDiagnostic",
     "VideoManipMetricEvaluator",
+    "VideoManipInteractionCompiler",
+    "VideoManipInteractionDiagnostic",
+    "TWISTG1ReplayEvaluator",
+    "TWISTReplayDiagnostic",
 ]

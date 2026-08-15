@@ -1,0 +1,10 @@
+diff --git a/hamer/utils/renderer.py b/hamer/utils/renderer.py
+index 7dd55f4..8a31efe 100644
+--- a/hamer/utils/renderer.py
++++ b/hamer/utils/renderer.py
+@@ -1,5 +1,4 @@
+ import os
+-from turtle import right
+ if 'PYOPENGL_PLATFORM' not in os.environ:
+     os.environ['PYOPENGL_PLATFORM'] = 'egl'
+ import torch

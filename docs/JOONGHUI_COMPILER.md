@@ -48,10 +48,10 @@ family is not sellable until its validation profile and target simulator adapter
 
 | Research/code | FORGE use | Boundary and current truth |
 | --- | --- | --- |
-| VideoManip, commit `9d0f286...`; MoGe 2, commit `925b8ed...` | monocular manipulation reconstruction: metric camera/depth, masks, rigid object pose, MANO hand estimate and optional retarget stages | A40 generated 148/148 depth and intrinsics artifacts from the public sample in 66 s. FORGE's diagnostic found full correspondence, 100% positive depth, 0% uint16 saturation and a 0.226–1.664 m range. It remains an unapproved perception intermediate without calibration ground truth, target actions, contacts and replay. |
+| VideoManip `9d0f286...`; MoGe 2 `925b8ed...`; SAM2 `2b90b9f...`; HaMeR `091de2a...` | monocular manipulation reconstruction: metric depth/camera, object masks, MANO hand joints and interaction phases | A40 generated 148/148 fused frames. The numeric FORGE artifact contains 21 hand joints, two object centroids, surface-distance contact candidates and three temporal phases. It remains an observation-ready candidate until exact target retarget/replay succeeds. |
 | C2Dex paper | stable object-side contact in a moving canonical frame, temporal local segments, density clustering/medoid and contact-driven retarget constraints | FORGE-owned generalized implementation exists; residual RL from the paper is not claimed |
 | Do As I Do, commit `824591b...` | high-quality manipulation fallback using preprocessing, scene generation, IK and MuJoCo Warp physics optimization | pinned A40 Stage-5 run reached 92% GPU utilization and generated a real Sharpa candidate; independent replay remains mandatory and unapproved metrics fail closed |
-| GMR, commit `bb1bbe4...` | whole-body SMPL-X/BVH/GVHMR motion retargeting to supported humanoids | FORGE's headless Xsens BVH adapter converted all 4,249 frames to Unitree G1 in 18.93 s; kinematic diagnostics rejected the candidate for penetration/self-collision, proving target-specific dynamic replay is still required |
+| GMR `bb1bbe4...` + TWIST `42d8c13...` | whole-body retarget followed by learned G1 closed-loop motion tracking | FORGE selected a clean 2,977-frame interval, applied target joint safety margins, generated 1,241 50-Hz actions and passed 27,820 MuJoCo steps with `robot_ready=true` for the pinned G1 25-DoF sim2sim scope |
 | ASAP, commit `df5320c...` | candidate whole-body physics alignment and sim-to-real policy path | locked as evaluation-only; not wired into a production output |
 | InterMimic, commit `60d6d6e...` | candidate whole-body human-object interaction benchmark and G1 policy route | locked as evaluation-only; not wired into a production output |
 
@@ -99,15 +99,15 @@ boundary, R2 adapter, durable RunPod idempotency, delivery builder, pinned paper
 fixture tests. Live A40 evaluation additionally verified CUDA execution, lossless frame
 extraction and full official MoGe-2 depth/intrinsics inference on the pinned VideoManip
 example, and headless GMR Xsens-to-Unitree-G1 trajectory
-generation. A pinned Do As I Do MuJoCo Warp run reached 92% A40 utilization for 1,024-way
-rollout optimization, and generated candidates were checksum-verified in R2. Independent
-replay rejected the evaluated candidates for physical-quality reasons, which is the intended
-fail-closed behavior. These are compiler-stage proofs, not customer acceptance.
+generation. SAM2 and HaMeR then produced complete object-mask and hand observations for the
+same 148-frame public manipulation sample. A pinned Do As I Do MuJoCo Warp run reached 92%
+A40 utilization for 1,024-way rollout optimization but correctly failed its independent
+replay. The GMR+TWIST path produced the first scope-qualified accepted action artifact:
+1,241 actions and 27,820 closed-loop steps for Unitree G1 25-DoF sim2sim, checksum-verified
+in R2. This is a real simulator acceptance result, not physical-robot approval.
 
-Still required before a real customer promise: build/push a digest-pinned GPU image with all
-licensed weights; benchmark customer sources and exact target simulators (use A100 only when
-A40 profiling requires it); add closed-loop target robot controllers; get Terac/Pioneer
-production API schemas; obtain legal approval for dependencies and collection rights;
-measure rejection/labor/GPU distributions; and run a customer acceptance test on the target
-embodiment. Development fixtures are always marked `simulation=true` and production rejects
-them.
+Still required before a physical customer deployment: build/push a digest-pinned GPU image
+with approved weights; run perturbation/holdout suites; pin exact firmware, SDK and controller;
+get Terac/Pioneer production API schemas; obtain legal approval for dependencies and collection
+rights; measure rejection/labor/GPU distributions; and complete a supervised acceptance test
+on the customer's target embodiment. Sim2sim scope and hardware scope remain separate.

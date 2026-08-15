@@ -20,13 +20,13 @@ artifacts. They are useful only when they contribute to the episode above.
 
 | Public source | Actual output | What passed | Why it is not deliverable yet |
 |---|---|---|---|
-| VideoManip `real_14_pourtea.mp4` | 148 RGB frames, 148 MoGe-2 uint16 millimetre depth maps, 148 camera matrices | one-to-one correspondence; all files readable; 100% positive depth; 0% saturation; 0.226–1.664 m range | no calibration ground truth, object/effector trajectory, contacts, target action or replay |
-| GMR Xsens boxing BVH | 4,249-frame Unitree G1 `qpos` candidate | finite states and joint limits | 1,272 self-collision frames, 22.8 mm max penetration and 0.0534 m/s support-foot slip p95; no closed-loop action |
+| VideoManip `real_14_pourtea.mp4` | 148 metric depth/camera frames, 296 SAM2 object masks, 148 HaMeR joint/mesh observations and a 44,547-byte numeric interaction NPZ | 148/148 fused frames; hand–grasp distance median 7.62 mm; 144 contact-candidate frames; `free → transport → target interaction` phases | camera-to-world calibration, rigid object orientation and an exact target robot/action/replay are not present |
+| GMR Xsens boxing BVH → TWIST G1 | 1,241-frame, 50 Hz G1 action artifact from a clean 2,977-frame source interval | closed-loop GPU policy + 27,820 MuJoCo steps; no falls, material self-collisions, nonfinite states or joint-limit events; `robot_ready_accepted=true` for G1 25-DoF sim2sim | scoped to the pinned G1 sim2sim model; not physical-hardware approval |
 | Do As I Do Sharpa whisking fixture | GPU-optimized `qpos`/`ctrl` candidate using 1,024 parallel rollouts | real A40 optimization; finite states; no joint-limit events in independent replay | 0.537 m free-joint drift and 4.77 mm penetration on the 500-frame run |
 
-The correct audit result is therefore **no public candidate is currently a customer-ready
-episode**. This is not a pipeline crash: the FORGE quality boundary correctly rejects paper
-outputs that do not yet satisfy the product contract.
+The public whole-body path now produces one **scope-qualified robot-ready episode** for
+`unitree_g1_25dof_sim2sim`. The manipulation and Do As I Do candidates remain rejected.
+FORGE does not promote the sim2sim result to unattended physical-hardware approval.
 
 ## VideoManip/MoGe run evidence
 
@@ -40,11 +40,31 @@ outputs that do not yet satisfy the product contract.
 - Durable evidence: `benchmarks/evidence/videomanip-moge-metric-2026-08-15.json`
 - R2 round-trip verified object: `r2://forge-dev/evaluation/videomanip/moge-metric-2026-08-15.json`
 
+## VideoManip interaction evidence
+
+- SAM2 revision/checkpoint: `2b90b9f...` / `2647878d...`
+- HaMeR revision/checkpoint: `091de2a...` / `e5cc06f2...`
+- ViTPose revision/checkpoint: `d521645...` / `b0555e1e...`
+- 148/148 valid hand, grasp-mask and target-mask frames; zero ambiguous actors
+- Interaction NPZ SHA-256: `ca4bef79eeb3a7265ba2a264f31ecd49818d41372d57ec889f80ee1f4e205962`
+- Evidence: `benchmarks/evidence/videomanip-interaction-2026-08-15.json`
+- R2 round-trip: `r2://forge-dev/evaluation/videomanip/interaction/ca4bef79e...npz`
+
+## GMR + TWIST accepted sim2sim evidence
+
+- GMR revision: `bb1bbe40774794fceb2a7c579a3464a28e68c844`
+- TWIST revision/policy: `42d8c134...` / `0ec24c54...`
+- Source interval: `[768, 3745)`, resampled to 1,241 control frames at 50 Hz
+- Replay: 27,820 MuJoCo steps, 0 falls, 0 material self-collisions, 0 joint-limit events
+- Tracking: 0.2053 rad joint RMSE, 0.0482 m height RMSE, 0.0693 rad roll/pitch RMSE
+- Accepted action SHA-256: `e6b967ca42acb296c57180a7e54e916722c3912108271fdf0dececbff120db3d`
+- Evidence: `benchmarks/evidence/twist-g1-replay-2026-08-15.json`
+- R2 round-trip: `r2://forge-dev/validated/twist/unitree-g1/e6b967ca...npz`
+
 ## Next acceptance path
 
-For manipulation, the next useful integration is masks + rigid object/effector pose, then
-canonical contact/phase extraction, target-specific retargeting and independent replay. For
-locomotion and other robots, video-only reconstruction is replaceable: calibrated robot
-state, teleoperation logs or simulator state should enter the generic Skill IR directly.
-No motion family is accepted until its target embodiment and deterministic validation
-profile pass.
+For manipulation, the remaining path is calibrated camera-to-world plus rigid object 6-DoF,
+then target-specific retargeting and independent replay. For physical G1 use, the accepted
+sim2sim artifact still requires perturbation tests, exact firmware/SDK/controller pinning and
+a supervised hardware acceptance run. Other robots enter through the same target-profile
+boundary; acceptance never transfers between embodiments.

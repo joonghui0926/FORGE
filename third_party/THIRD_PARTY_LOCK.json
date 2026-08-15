@@ -18,6 +18,48 @@
       "reason": "Repository revision, weights, transitive licenses, and commercial use require review."
     },
     {
+      "name": "SAM 2.1 Large",
+      "source": "https://github.com/facebookresearch/sam2",
+      "revision": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "model_source": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt",
+      "model_sha256": "2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318",
+      "model_size_bytes": 898083611,
+      "capabilities": ["active_region_segmentation"],
+      "production_status": "evaluation_only",
+      "reason": "Official code and checkpoint bytes are pinned; target-domain benchmark and complete commercial review remain required."
+    },
+    {
+      "name": "HaMeR",
+      "source": "https://github.com/geopavlakos/hamer",
+      "revision": "091de2a07b5414a2f9373d2bec368b8c979883b6",
+      "model_sha256": "e5cc06f294d88a92dee24e603480aab04de532b49f0e08200804ee7d90e16f53",
+      "model_size_bytes": 2689536166,
+      "capabilities": ["hand_or_effector_kinematics"],
+      "production_status": "evaluation_only",
+      "compatibility_patches": ["third_party/patches/hamer-python312-headless.patch"],
+      "reason": "Code, checkpoint, MANO asset, and transitive model terms require approval; MANO is injected privately and never redistributed."
+    },
+    {
+      "name": "ViTPose",
+      "source": "https://github.com/ViTAE-Transformer/ViTPose",
+      "revision": "d5216452796c90c6bc29f5c5ec0bdba94366768a",
+      "model_sha256": "b0555e1e2392e6a2be2d9265368f344d70ccbfd656ad480aa5c1de2e604519c9",
+      "model_size_bytes": 3807742341,
+      "capabilities": ["human_keypoint_detection"],
+      "production_status": "evaluation_only",
+      "reason": "Pinned HaMeR transitive pose model; code, checkpoint, and target-domain use require review."
+    },
+    {
+      "name": "Detectron2 ViTDet",
+      "source": "https://github.com/facebookresearch/detectron2",
+      "revision": "b4a4a3bd136852dae5fb1de37978dee412653e31",
+      "model_sha256": "8601bc52000c8a87960f3db6a9672596c5e06ce33bc30a3b8f96a96efe42ae60",
+      "model_size_bytes": 2765948277,
+      "capabilities": ["person_detection"],
+      "production_status": "evaluation_only",
+      "reason": "Pinned HaMeR transitive detector and model bytes; target-domain and transitive review remain required."
+    },
+    {
       "name": "MoGe 2",
       "source": "https://github.com/microsoft/MoGe",
       "revision": "925b8ed835a7a9cdb7578ba15c658a0afc969030",
@@ -82,6 +124,19 @@
       "capabilities": ["whole_body_retarget"],
       "production_status": "evaluation_only",
       "reason": "MIT repository; robot meshes, motion datasets, and target-specific configuration require separate review."
+    },
+    {
+      "name": "TWIST general motion tracker",
+      "source": "https://github.com/YanjieZe/TWIST",
+      "revision": "42d8c134739eee51f28d7cc0ff72a86728afb8dc",
+      "model_sha256": "0ec24c54c1e1502f5c7bd27efb39ecc0630c06b5c01dc640a6d493d672fc515c",
+      "target_model_sha256": "2f3eecedd64e9ec8b187bbb2e1cbfb297c13a3b6d588f2bb235c47e2d10181ad",
+      "capabilities": [
+        "unitree_g1_closed_loop_motion_tracking",
+        "unitree_g1_sim2sim_replay"
+      ],
+      "production_status": "evaluation_only",
+      "reason": "MIT repository and pinned public checkpoint passed FORGE sim2sim evaluation; checkpoint, robot assets, SDK, and physical-hardware deployment still require separate approval."
     },
     {
       "name": "SMPL-X Python library",
