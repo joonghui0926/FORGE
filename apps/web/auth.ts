@@ -27,17 +27,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user }) {
       const now = Math.floor(Date.now() / 1000)
-      const needsMint = (user?.email && !token.forgeToken) ||
-        (token.forgeTokenExp as number | undefined && (token.forgeTokenExp as number) - now < 300)
-      if (user?.email && needsMint) {
-        // Stub: email as tenant_id. Replace with DB lookup when tenant table is set up.
-        const tenantId = user.email
-        const forgeToken = await new SignJWT({ sub: user.email, tenant_id: tenantId })
+      const isFirstSignIn = !!(user?.email && !token.forgeToken)
+      const needsRefresh  = !!(token.forgeTokenExp as number | undefined &&
+        (token.forgeTokenExp as number) - now < 300)
+      if (isFirstSignIn || needsRefresh) {
+        const sub      = user?.email ?? (token.sub as string)
+        const tenantId = user?.email ?? (token.tenantId as string)
+        const forgeToken = await new SignJWT({ sub, tenant_id: tenantId })
           .setProtectedHeader({ alg: 'HS256' })
           .setExpirationTime('1h')
           .sign(jwtSecret)
-        token.forgeToken = forgeToken
-        token.tenantId   = tenantId
+        token.forgeToken    = forgeToken
+        token.tenantId      = tenantId
         token.forgeTokenExp = now + 3600
       }
       return token
