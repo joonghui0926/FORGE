@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Canvas & primary */
+  --color-forge-canvas:         #F8F5EB;
+  --color-forge-primary:        #00ABC2;
+  --color-forge-primary-hover:  #0095AA;
+  --color-forge-primary-active: #007F91;
+  --color-forge-primary-ink:    #082F35;
+
+  /* Ink */
+  --color-forge-ink:            #152126;
+  --color-forge-ink-muted:      #53636A;
+  --color-forge-ink-subtle:     #718087;
+
+  /* Surfaces */
+  --color-forge-surface:        #FFFEF9;
+  --color-forge-surface-soft:   #F1EFE6;
+  --color-forge-surface-cyan:   #DDF6F8;
+
+  /* Borders */
+  --color-forge-border:         #D8D6CC;
+  --color-forge-border-strong:  #B9C0BF;
+  --color-forge-focus:          #007F91;
+
+  /* Semantic */
+  --color-forge-success:        #177A52;
+  --color-forge-success-soft:   #E1F3EA;
+  --color-forge-warning:        #9A6512;
+  --color-forge-warning-soft:   #FFF0CF;
+  --color-forge-danger:         #B33A3A;
+  --color-forge-danger-soft:    #FBE5E2;
+  --color-forge-info:           #246B8A;
+  --color-forge-info-soft:      #E1F1F7;
+
+  /* Typography */
+  --font-sans: Inter, "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Shape */
+  --radius-control: 12px;
+  --radius-surface: 16px;
+  --radius-pill:    999px;
+
+  /* Spacing augments */
+  --spacing-1: 4px;  --spacing-2: 8px;   --spacing-3: 12px;
+  --spacing-4: 16px; --spacing-5: 24px;  --spacing-6: 32px;
+  --spacing-7: 48px; --spacing-8: 64px;  --spacing-9: 96px;
+}

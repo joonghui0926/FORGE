@@ -1,0 +1,28 @@
+/* FORGE design tokens — CSS custom properties only, no framework dependency */
+:root {
+  --color-forge-canvas:         #F8F5EB;
+  --color-forge-primary:        #00ABC2;
+  --color-forge-primary-hover:  #0095AA;
+  --color-forge-primary-active: #007F91;
+  --color-forge-primary-ink:    #082F35;
+  --color-forge-ink:            #152126;
+  --color-forge-ink-muted:      #53636A;
+  --color-forge-ink-subtle:     #718087;
+  --color-forge-surface:        #FFFEF9;
+  --color-forge-surface-soft:   #F1EFE6;
+  --color-forge-surface-cyan:   #DDF6F8;
+  --color-forge-border:         #D8D6CC;
+  --color-forge-border-strong:  #B9C0BF;
+  --color-forge-focus:          #007F91;
+  --color-forge-success:        #177A52;
+  --color-forge-success-soft:   #E1F3EA;
+  --color-forge-warning:        #9A6512;
+  --color-forge-warning-soft:   #FFF0CF;
+  --color-forge-danger:         #B33A3A;
+  --color-forge-danger-soft:    #FBE5E2;
+  --color-forge-info:           #246B8A;
+  --color-forge-info-soft:      #E1F1F7;
+  --radius-control: 12px;
+  --radius-surface: 16px;
+  --radius-pill:    999px;
+}
