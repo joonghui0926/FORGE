@@ -10,6 +10,10 @@ from forge.adapters.papers.runners import (
     PipelineExecution,
     VideoManipAdapter,
 )
+from forge.adapters.papers.videomanip_validation import (
+    VideoManipMetricDiagnostic,
+    VideoManipMetricEvaluator,
+)
 
 __all__ = [
     "DoAsIDoAdapter",
@@ -22,4 +26,6 @@ __all__ = [
     "GMRKinematicEvaluator",
     "PipelineExecution",
     "VideoManipAdapter",
+    "VideoManipMetricDiagnostic",
+    "VideoManipMetricEvaluator",
 ]

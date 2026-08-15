@@ -59,6 +59,12 @@ pose additionally needs the pinned FoundationPose environment. Do As I Do consum
 tar archive of reconstruction artifacts and must emit `scene.xml`,
 `trajectory_mjwp*.npz`, and `config.yaml` or the job fails.
 
+The intrinsics stage archives `cam_K.txt`, every per-frame matrix in `cam_info/`, and every
+uint16 millimetre depth image in `depth/`. Run `scripts/validate_videomanip_metric.py` on the
+unpacked output before normalization. A structural pass remains a perception candidate;
+the diagnostic deliberately cannot approve a robot-ready episode without independent
+calibration and exact-target replay.
+
 GMR headless Xsens BVH configuration example:
 
 ```json

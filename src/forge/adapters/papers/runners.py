@@ -147,16 +147,26 @@ class VideoManipAdapter(_ExternalAdapter):
         if "clicks" in stages and os.getenv("DISPLAY") is None:
             raise RuntimeError("VIDEOMANIP_INTERACTIVE_CLICKS_REQUIRE_DISPLAY_OR_PRECOMPUTED_INPUT")
         reconstruction = checkout / "reconstruction"
+        object_root = data_root / object_id
         expected_by_stage = {
-            "frames": data_root / object_id / "rgb",
-            "intrinsics": data_root / object_id / "cam_K.txt",
-            "hand_mesh": data_root / object_id / "human_hand",
-            "masks": data_root / object_id / "masks_pred_obj",
-            "obj_mesh": data_root / object_id / "mesh_original",
-            "obj_pose": data_root / object_id / "obj_mesh",
-            "retarget": data_root / object_id / "robot_qpos",
+            "frames": (object_root / "rgb",),
+            # VideoManip writes all three artifacts. Omitting the per-frame K/depth
+            # directories would make a worker report success and then discard its useful
+            # metric reconstruction output when it builds the archive.
+            "intrinsics": (
+                object_root / "cam_K.txt",
+                object_root / "cam_info",
+                object_root / "depth",
+            ),
+            "hand_mesh": (object_root / "human_hand",),
+            "masks": (object_root / "masks_pred_obj",),
+            "obj_mesh": (object_root / "mesh_original",),
+            "obj_pose": (object_root / "obj_mesh",),
+            "retarget": (object_root / "robot_qpos",),
         }
-        expected = tuple(expected_by_stage[stage] for stage in stages if stage in expected_by_stage)
+        expected = tuple(
+            path for stage in stages for path in expected_by_stage.get(stage, ())
+        )
         command = (
             "bash",
             "process_videos.sh",

@@ -48,7 +48,7 @@ family is not sellable until its validation profile and target simulator adapter
 
 | Research/code | FORGE use | Boundary and current truth |
 | --- | --- | --- |
-| VideoManip, commit `9d0f286...` | monocular manipulation reconstruction: metric camera/depth, masks, rigid object pose, MANO hand estimate and optional retarget stages | adapter and exact output checks exist; the A40 evaluation extracted all 148 frames of the pinned example, while later model stages and transitive commercial licenses remain evaluation-only |
+| VideoManip, commit `9d0f286...`; MoGe 2, commit `925b8ed...` | monocular manipulation reconstruction: metric camera/depth, masks, rigid object pose, MANO hand estimate and optional retarget stages | A40 generated 148/148 depth and intrinsics artifacts from the public sample in 66 s. FORGE's diagnostic found full correspondence, 100% positive depth, 0% uint16 saturation and a 0.226–1.664 m range. It remains an unapproved perception intermediate without calibration ground truth, target actions, contacts and replay. |
 | C2Dex paper | stable object-side contact in a moving canonical frame, temporal local segments, density clustering/medoid and contact-driven retarget constraints | FORGE-owned generalized implementation exists; residual RL from the paper is not claimed |
 | Do As I Do, commit `824591b...` | high-quality manipulation fallback using preprocessing, scene generation, IK and MuJoCo Warp physics optimization | pinned A40 Stage-5 run reached 92% GPU utilization and generated a real Sharpa candidate; independent replay remains mandatory and unapproved metrics fail closed |
 | GMR, commit `bb1bbe4...` | whole-body SMPL-X/BVH/GVHMR motion retargeting to supported humanoids | FORGE's headless Xsens BVH adapter converted all 4,249 frames to Unitree G1 in 18.93 s; kinematic diagnostics rejected the candidate for penetration/self-collision, proving target-specific dynamic replay is still required |
@@ -97,7 +97,8 @@ direct robot-state normalization, stable-contact compiler, constraint planner,
 motion-specific deterministic quality gates, safe amplification, Pioneer fixture/provider
 boundary, R2 adapter, durable RunPod idempotency, delivery builder, pinned paper runners and
 fixture tests. Live A40 evaluation additionally verified CUDA execution, lossless frame
-extraction on the pinned VideoManip example, and headless GMR Xsens-to-Unitree-G1 trajectory
+extraction and full official MoGe-2 depth/intrinsics inference on the pinned VideoManip
+example, and headless GMR Xsens-to-Unitree-G1 trajectory
 generation. A pinned Do As I Do MuJoCo Warp run reached 92% A40 utilization for 1,024-way
 rollout optimization, and generated candidates were checksum-verified in R2. Independent
 replay rejected the evaluated candidates for physical-quality reasons, which is the intended

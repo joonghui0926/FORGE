@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from forge.adapters.papers.runners import GMRAdapter
+from forge.adapters.papers.runners import GMRAdapter, VideoManipAdapter
 from forge.geometry import Pose
 from forge.modules.retarget.planner import RetargetPlanner, RobotCapability
 from forge.modules.reconstruction.robot_state import (
@@ -16,6 +16,32 @@ from tests.helpers import SHA
 
 
 class RetargetTest(unittest.TestCase):
+    def test_videomanip_intrinsics_keeps_per_frame_depth_and_camera_outputs(self) -> None:
+        adapter = VideoManipAdapter()
+        captured: dict[str, tuple[Path, ...]] = {}
+
+        def fake_execute(command, checkout, expected_outputs, timeout_s, environment, simulation):
+            captured["outputs"] = expected_outputs
+            return None
+
+        adapter._execute = fake_execute  # type: ignore[method-assign]
+        adapter.run(
+            checkout=Path("checkout"),
+            object_id="take_1",
+            stages=("frames", "intrinsics"),
+            data_root=Path("data"),
+            video_dir=Path("videos"),
+        )
+        self.assertEqual(
+            captured["outputs"],
+            (
+                Path("data/take_1/rgb"),
+                Path("data/take_1/cam_K.txt"),
+                Path("data/take_1/cam_info"),
+                Path("data/take_1/depth"),
+            ),
+        )
+
     def test_gmr_adapter_uses_pinned_public_smplx_cli(self) -> None:
         command = GMRAdapter().build_command(
             "unitree_g1", Path("motion.npz"), Path("robot_motion.pkl")

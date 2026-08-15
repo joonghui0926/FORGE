@@ -6,6 +6,10 @@ evaluation pod. The source/model revisions and input hashes make each record aud
 - `a40-smoke-2026-08-15.json`: CUDA FP16 matrix-multiply smoke profile.
 - `videomanip-frames-2026-08-15.json`: complete frame extraction from VideoManip's pinned
   example video.
+- `videomanip-moge-metric-2026-08-15.json`: official MoGe-2 metric-depth/intrinsics run over
+  all 148 public VideoManip frames on A40. The one-to-one artifacts pass structural checks,
+  but the record remains unapproved because no independent calibration or robot replay is
+  present.
 - `gmr-unitree-g1-20f-2026-08-15.json`: Xsens BVH to Unitree G1 trajectory candidate from
   the FORGE headless GMR adapter.
 - `do-as-i-do-whisking-replay-2026-08-15.json`: segmented open-loop MuJoCo replay of the

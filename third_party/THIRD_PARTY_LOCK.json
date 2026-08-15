@@ -17,6 +17,34 @@
       "reason": "Repository revision, weights, transitive licenses, and commercial use require review."
     },
     {
+      "name": "MoGe 2",
+      "source": "https://github.com/microsoft/MoGe",
+      "revision": "925b8ed835a7a9cdb7578ba15c658a0afc969030",
+      "model_source": "https://huggingface.co/Ruicheng/moge-2-vitl-normal",
+      "model_revision": "b135031bae30b5ac2ae141a0e68717795ce38340",
+      "model_sha256": "280741fd09bc3f403ccff9967784c2a391b52d2c0742ae3efdb21d9f90cc1a01",
+      "model_size_bytes": 1323815904,
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Official code and exact model bytes are pinned; monocular metric accuracy and DINOv2/model-card commercial terms still require target-domain review."
+    },
+    {
+      "name": "utils3d",
+      "source": "https://github.com/EasternJournalist/utils3d",
+      "revision": "3fab839f0be9931dac7c8488eb0e1600c236e183",
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive dependency installed by the pinned MoGe revision; license and deployment review remain open."
+    },
+    {
+      "name": "pipeline",
+      "source": "https://github.com/EasternJournalist/pipeline",
+      "revision": "866f059d2a05cde05e4a52211ec5051fd5f276d6",
+      "capabilities": ["metric_depth_and_intrinsics"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive dependency installed by the pinned MoGe revision; license and deployment review remain open."
+    },
+    {
       "name": "MANO",
       "source": "external licensed asset via MANO_MODEL_DIR",
       "revision": "v1.2",
