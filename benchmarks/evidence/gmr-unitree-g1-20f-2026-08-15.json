@@ -1,0 +1,16 @@
+{
+  "acceptance_state": "candidate_requires_independent_replay",
+  "adapter_id": "gmr-xsens-headless-v1",
+  "duration_s": 0.6818817079765722,
+  "fps": 120,
+  "output_frame_count": 20,
+  "job_id": "job_gmr_worker_smoke",
+  "output_path": "gmr_trajectory.npz",
+  "output_sha256": "4392e5bacb6e328fee644b3c1f4ce330580540af42bc70a692b7cc83ab002fc0",
+  "revision": "bb1bbe40774794fceb2a7c579a3464a28e68c844",
+  "robot_id": "unitree_g1",
+  "schema_version": "forge.gmr-headless-result.v1",
+  "simulation": false,
+  "source_frame_count": 20,
+  "source_sha256": "9654e5d7bead96246046cfb15e59e9ec78d7ce287972cebfc4f7c636d0a119af"
+}

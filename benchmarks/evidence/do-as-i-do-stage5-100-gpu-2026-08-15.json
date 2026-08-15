@@ -1,0 +1,18 @@
+{
+  "acceptance_state": "candidate_requires_independent_replay",
+  "adapter_id": "do-as-i-do-stage5-gpu-v1",
+  "duration_s": 214.3419622820802,
+  "gpu_name": "NVIDIA A40",
+  "hand": "right",
+  "max_observed_gpu_utilization_percent": 92,
+  "max_sim_steps": 100,
+  "output_bytes": 188018,
+  "output_sha256": "9e8f07c0b69b1fa0565c22d31f2efe7837a81e696c79a18cabf8d9f3aa614111",
+  "revision": "824591b808c342b20079c3b4198a8c2bdf88c74e",
+  "r2_round_trip_verified": true,
+  "r2_uri": "r2://forge-dev/evaluation/do-as-i-do/sharpa/9e8f07c0b69b1fa0565c22d31f2efe7837a81e696c79a18cabf8d9f3aa614111.npz",
+  "robot_id": "sharpa",
+  "schema_version": "forge.do-as-i-do-optimizer-run.v1",
+  "simulation": false,
+  "task": "whisking"
+}

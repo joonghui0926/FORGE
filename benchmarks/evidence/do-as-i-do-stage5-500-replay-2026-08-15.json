@@ -1,0 +1,23 @@
+{
+  "acceptance_state": "diagnostic_only_profile_not_approved",
+  "adapter_id": "do-as-i-do-mujoco-replay-v1",
+  "free_joint_translation_rmse_m": 0.5369252650942998,
+  "hinge_joint_rmse_rad": 0.0011598379700230718,
+  "joint_limit_violation_count": 0,
+  "max_penetration_m": 0.004768057204445451,
+  "model_nq": 35,
+  "model_nu": 28,
+  "model_nv": 34,
+  "model_timestep_s": 0.002,
+  "nonfinite_state_count": 0,
+  "orientation_rmse_rad": 0.04471811353469887,
+  "scene_sha256": "dfc34bc3599dd61537a542e7e82392676e3956f82d731a660b8346bdeee55b42",
+  "schema_version": "forge.do-as-i-do-replay.v1",
+  "simulated_step_count": 1236,
+  "simulation": false,
+  "slide_joint_rmse_m": 0.008112289907896609,
+  "trajectory_dt_median_s": 0.004999999999999893,
+  "trajectory_frame_count": 500,
+  "trajectory_segment_count": 5,
+  "trajectory_sha256": "780f95cd5839674c741f2686241de64961c5d2355feecf9f809a9bb0a4d0db79"
+}

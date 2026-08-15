@@ -23,6 +23,7 @@ R2_SECRET_ACCESS_KEY
 R2_ENDPOINT
 VIDEOMANIP_CHECKOUT=/opt/vendor/VideoManip
 DO_AS_I_DO_CHECKOUT=/opt/vendor/do-as-i-do
+GMR_CHECKOUT=/opt/vendor/GMR
 MANO_MODEL_DIR=/run/secrets/mano/models
 HF_TOKEN
 ```
@@ -58,9 +59,36 @@ pose additionally needs the pinned FoundationPose environment. Do As I Do consum
 tar archive of reconstruction artifacts and must emit `scene.xml`,
 `trajectory_mjwp*.npz`, and `config.yaml` or the job fails.
 
+GMR headless Xsens BVH configuration example:
+
+```json
+{
+  "adapter_id": "gmr-xsens-headless-v1",
+  "input_kind": "source",
+  "source_extension": ".bvh",
+  "robot_id": "unitree_g1",
+  "start_frame": 0,
+  "end_frame": 240,
+  "scale": 0.01,
+  "reset_to_zero": true
+}
+```
+
+The output is a candidate NPZ with root pose and robot DoF positions. It is never an
+accepted episode until the target-specific FORGE simulator replay passes the locomotion or
+whole-body quality profile.
+
+The `do-as-i-do-mujoco-replay-v1` validation adapter consumes a safe tar containing the
+scene, referenced meshes and `trajectory_mjwp.npz`. Its output remains a diagnostic; missing
+contact metrics or an unapproved target profile fail closed at the deterministic quality
+gate.
+
 ## Benchmark acceptance
 
 Record for every source and stage: image digest, GPU type, driver/CUDA, input frame count and
 duration, peak VRAM/RAM/disk, wall/GPU seconds, output hashes, reconstruction valid ratio,
 replay profile, pass/fail reasons and dollar cost. Never convert a successful process exit
 into an accepted episode without the independent FORGE quality gate.
+
+The first bounded A40 evidence is tracked under `benchmarks/evidence/`. These records prove
+execution and pin the inputs/revisions; they do not constitute customer acceptance tests.

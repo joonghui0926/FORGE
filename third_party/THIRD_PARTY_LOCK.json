@@ -39,12 +39,28 @@
       "reason": "Top-level code is MIT; every submodule, model weight, and dataset term still needs transitive review."
     },
     {
+      "name": "MuJoCo Warp",
+      "source": "https://github.com/google-deepmind/mujoco_warp",
+      "revision": "5d5a6450a7699e695f1767efd7715251713da2ac",
+      "capabilities": ["gpu_physics_optimization"],
+      "production_status": "evaluation_only",
+      "reason": "Pinned by Do As I Do together with warp-lang 1.10.1 and MuJoCo 3.4.0; deployment and transitive terms require review."
+    },
+    {
       "name": "GMR",
       "source": "https://github.com/YanjieZe/GMR",
       "revision": "bb1bbe40774794fceb2a7c579a3464a28e68c844",
       "capabilities": ["whole_body_retarget"],
       "production_status": "evaluation_only",
       "reason": "MIT repository; robot meshes, motion datasets, and target-specific configuration require separate review."
+    },
+    {
+      "name": "SMPL-X Python library",
+      "source": "https://github.com/vchoutas/smplx",
+      "revision": "1265df7ba545e8b00f72e7c557c766e15c71632f",
+      "capabilities": ["whole_body_model_loading"],
+      "production_status": "evaluation_only",
+      "reason": "Transitive GMR dependency observed on the A40 evaluation pod; model assets and their license remain external."
     },
     {
       "name": "ASAP",

@@ -1,0 +1,16 @@
+{
+  "adapter_id": "videomanip-reconstruction-v1",
+  "duration_s": 4.93,
+  "extracted_frame_count": 148,
+  "extraction_ratio": 1.0,
+  "fps": 30.0,
+  "input_frame_count": 148,
+  "input_sha256": "5f2d2ff7f2164f8e108308742c5a1056015ce04b67f91f8e760003f062e6db94",
+  "object_id": "real_14_pourtea",
+  "resolution": [1280, 720],
+  "revision": "9d0f286af35d73f4252d115d968e0a9c06542b9c",
+  "schema_version": "forge.paper-stage-benchmark.v1",
+  "simulation": false,
+  "stage": "frames",
+  "status": "succeeded"
+}

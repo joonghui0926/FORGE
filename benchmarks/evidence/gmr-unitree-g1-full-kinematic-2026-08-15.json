@@ -1,0 +1,16 @@
+{
+  "acceptance_state": "kinematic_diagnostic_requires_dynamic_replay",
+  "adapter_id": "gmr-kinematic-diagnostic-v1",
+  "foot_slip_p95_m_s": 0.053402040029763446,
+  "fps": 120,
+  "frame_count": 4249,
+  "joint_limit_violation_count": 0,
+  "max_penetration_m": 0.02276876143438328,
+  "model_sha256": "85a25128d42ad3cc8dd071c089806a2773a59ee0689edcc646aeb0201ae8f4c8",
+  "nonfinite_state_count": 0,
+  "robot_id": "unitree_g1",
+  "schema_version": "forge.gmr-kinematic-diagnostic.v1",
+  "self_collision_frame_count": 1272,
+  "simulation": false,
+  "trajectory_sha256": "0a731679cbf4c66af716d0c5e5a19f03e4554a708132f9d5c0f484a1c8420f90"
+}

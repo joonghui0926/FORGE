@@ -7,6 +7,8 @@ import json
 import os
 import tarfile
 
+from forge.adapters.papers.do_as_i_do_replay import DoAsIDoReplayEvaluator
+from forge.adapters.papers.gmr_headless import GMRHeadlessRunner
 from forge.adapters.papers.runners import DoAsIDoAdapter, PipelineExecution, VideoManipAdapter
 from forge.contracts.models import GPUJobRequest, canonical_json
 from forge.integrations.runpod.handler import ProcessorOutput
@@ -22,6 +24,10 @@ class PaperPipelineProcessor:
         adapter_id = document.get("adapter_id")
         with TemporaryDirectory(prefix=f"forge-{request.job_id}-") as directory:
             workspace = Path(directory)
+            if adapter_id == DoAsIDoReplayEvaluator.adapter_id:
+                return self._run_do_as_i_do_replay(document, inputs, workspace, request)
+            if adapter_id == GMRHeadlessRunner.adapter_id:
+                return self._run_gmr_headless(document, inputs, workspace, request)
             if adapter_id == VideoManipAdapter.adapter_id:
                 execution = self._run_videomanip(document, inputs, workspace)
             elif adapter_id == DoAsIDoAdapter.adapter_id:
@@ -49,6 +55,93 @@ class PaperPipelineProcessor:
                     media_type="application/gzip",
                 ),
             )
+
+    def _run_gmr_headless(
+        self,
+        document: dict[str, object],
+        inputs: dict[str, bytes],
+        workspace: Path,
+        request: GPUJobRequest,
+    ) -> tuple[ProcessorOutput, ...]:
+        extension = str(document.get("source_extension", ".bvh")).lower()
+        if extension != ".bvh":
+            raise ValueError("GMR_SOURCE_EXTENSION_UNSUPPORTED")
+        input_dir = workspace / "input"
+        output_dir = workspace / "output"
+        input_dir.mkdir()
+        output_dir.mkdir()
+        source_path = input_dir / "source.bvh"
+        output_path = output_dir / "gmr_trajectory.npz"
+        source_path.write_bytes(self._select_input(document, inputs))
+
+        offsets_path = None
+        offsets_kind = document.get("offsets_input_kind")
+        if offsets_kind is not None:
+            offsets_path = input_dir / "offsets.json"
+            try:
+                offsets_path.write_bytes(inputs[str(offsets_kind)])
+            except KeyError as error:
+                raise ValueError(f"PAPER_ADAPTER_INPUT_KIND_MISSING:{offsets_kind}") from error
+
+        checkout = Path(os.environ.get("GMR_CHECKOUT", "/opt/vendor/GMR"))
+        start_frame = document.get("start_frame")
+        end_frame = document.get("end_frame")
+        result = GMRHeadlessRunner().retarget_xsens_bvh(
+            checkout=checkout,
+            bvh_file=source_path,
+            output_file=output_path,
+            robot_id=str(document.get("robot_id", "unitree_g1")),
+            start_frame=None if start_frame is None else int(start_frame),
+            end_frame=None if end_frame is None else int(end_frame),
+            scale=float(document.get("scale", 0.01)),
+            reset_to_zero=bool(document.get("reset_to_zero", False)),
+            offsets_file=offsets_path,
+        )
+        report = result.to_dict()
+        report["job_id"] = request.job_id
+        report["output_path"] = "gmr_trajectory.npz"
+        encoded_report = (canonical_json(report) + "\n").encode("utf-8")
+        return (
+            ProcessorOutput(
+                kind="retarget_candidate_report",
+                filename="gmr_retarget_report.json",
+                data=encoded_report,
+            ),
+            ProcessorOutput(
+                kind="robot_trajectory_candidate",
+                filename="gmr_trajectory.npz",
+                data=output_path.read_bytes(),
+                media_type="application/octet-stream",
+            ),
+        )
+
+    def _run_do_as_i_do_replay(
+        self,
+        document: dict[str, object],
+        inputs: dict[str, bytes],
+        workspace: Path,
+        request: GPUJobRequest,
+    ) -> tuple[ProcessorOutput, ...]:
+        replay_root = workspace / "replay"
+        replay_root.mkdir()
+        self._extract_tar_safely(self._select_input(document, inputs), replay_root)
+        scene_path = self._safe_relative_path(
+            replay_root, str(document.get("scene_path", "scene.xml"))
+        )
+        trajectory_path = self._safe_relative_path(
+            replay_root,
+            str(document.get("trajectory_path", "trajectory_mjwp.npz")),
+        )
+        result = DoAsIDoReplayEvaluator().evaluate(scene_path, trajectory_path)
+        report = result.to_dict()
+        report["job_id"] = request.job_id
+        return (
+            ProcessorOutput(
+                kind="physics_replay_diagnostic",
+                filename="do_as_i_do_replay.json",
+                data=(canonical_json(report) + "\n").encode("utf-8"),
+            ),
+        )
 
     @staticmethod
     def _select_input(document: dict[str, object], inputs: dict[str, bytes]) -> bytes:
@@ -106,6 +199,14 @@ class PaperPipelineProcessor:
                 if member.issym() or member.islnk():
                     raise ValueError("ARCHIVE_LINKS_FORBIDDEN")
             archive.extractall(target, members=members, filter="data")
+
+    @staticmethod
+    def _safe_relative_path(root: Path, relative: str) -> Path:
+        candidate = (root / relative).resolve()
+        resolved_root = root.resolve()
+        if candidate != resolved_root and resolved_root not in candidate.parents:
+            raise ValueError("REPLAY_PATH_TRAVERSAL")
+        return candidate
 
     @staticmethod
     def _report(execution: PipelineExecution, request: GPUJobRequest) -> dict[str, object]:

@@ -48,10 +48,10 @@ family is not sellable until its validation profile and target simulator adapter
 
 | Research/code | FORGE use | Boundary and current truth |
 | --- | --- | --- |
-| VideoManip, commit `9d0f286...` | monocular manipulation reconstruction: metric camera/depth, masks, rigid object pose, MANO hand estimate and optional retarget stages | adapter and exact output checks exist; repo/weights and transitive commercial licenses remain evaluation-only |
+| VideoManip, commit `9d0f286...` | monocular manipulation reconstruction: metric camera/depth, masks, rigid object pose, MANO hand estimate and optional retarget stages | adapter and exact output checks exist; the A40 evaluation extracted all 148 frames of the pinned example, while later model stages and transitive commercial licenses remain evaluation-only |
 | C2Dex paper | stable object-side contact in a moving canonical frame, temporal local segments, density clustering/medoid and contact-driven retarget constraints | FORGE-owned generalized implementation exists; residual RL from the paper is not claimed |
-| Do As I Do, commit `824591b...` | high-quality manipulation fallback using preprocessing, scene generation, IK and MuJoCo Warp physics optimization | pinned runner and required scene/trajectory/config checks exist; GPU dependencies and assets must pass preflight |
-| GMR, commit `bb1bbe4...` | whole-body SMPL-X/BVH/GVHMR motion retargeting to supported humanoids | exact public `smplx_to_robot.py` CLI is used; every result still needs FORGE locomotion replay |
+| Do As I Do, commit `824591b...` | high-quality manipulation fallback using preprocessing, scene generation, IK and MuJoCo Warp physics optimization | pinned A40 Stage-5 run reached 92% GPU utilization and generated a real Sharpa candidate; independent replay remains mandatory and unapproved metrics fail closed |
+| GMR, commit `bb1bbe4...` | whole-body SMPL-X/BVH/GVHMR motion retargeting to supported humanoids | FORGE's headless Xsens BVH adapter converted all 4,249 frames to Unitree G1 in 18.93 s; kinematic diagnostics rejected the candidate for penetration/self-collision, proving target-specific dynamic replay is still required |
 | ASAP, commit `df5320c...` | candidate whole-body physics alignment and sim-to-real policy path | locked as evaluation-only; not wired into a production output |
 | InterMimic, commit `60d6d6e...` | candidate whole-body human-object interaction benchmark and G1 policy route | locked as evaluation-only; not wired into a production output |
 
@@ -96,11 +96,17 @@ Implemented and locally verified: generalized contracts, customer-to-collection 
 direct robot-state normalization, stable-contact compiler, constraint planner,
 motion-specific deterministic quality gates, safe amplification, Pioneer fixture/provider
 boundary, R2 adapter, durable RunPod idempotency, delivery builder, pinned paper runners and
-fixture tests.
+fixture tests. Live A40 evaluation additionally verified CUDA execution, lossless frame
+extraction on the pinned VideoManip example, and headless GMR Xsens-to-Unitree-G1 trajectory
+generation. A pinned Do As I Do MuJoCo Warp run reached 92% A40 utilization for 1,024-way
+rollout optimization, and generated candidates were checksum-verified in R2. Independent
+replay rejected the evaluated candidates for physical-quality reasons, which is the intended
+fail-closed behavior. These are compiler-stage proofs, not customer acceptance.
 
 Still required before a real customer promise: build/push a digest-pinned GPU image with all
-licensed weights; run benchmark sources on A40/A100; add exact target simulator/robot
-adapters; get Terac/Pioneer production API schemas; obtain legal approval for dependencies
-and collection rights; measure rejection/labor/GPU distributions; and run a customer
-acceptance test on the target embodiment. Development fixtures are always marked
-`simulation=true` and production rejects them.
+licensed weights; benchmark customer sources and exact target simulators (use A100 only when
+A40 profiling requires it); add closed-loop target robot controllers; get Terac/Pioneer
+production API schemas; obtain legal approval for dependencies and collection rights;
+measure rejection/labor/GPU distributions; and run a customer acceptance test on the target
+embodiment. Development fixtures are always marked `simulation=true` and production rejects
+them.

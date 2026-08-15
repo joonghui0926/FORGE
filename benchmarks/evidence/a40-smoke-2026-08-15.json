@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-08-15T21:00:16.540111+00:00",
+  "cuda_version": "12.8",
+  "dtype": "float16",
+  "gpu_name": "NVIDIA A40",
+  "gpu_total_memory_bytes": 47708110848,
+  "matrix_size": 8192,
+  "maximum_ms": 13.774592399597168,
+  "measured_iterations": 20,
+  "median_ms": 10.375120162963867,
+  "median_theoretical_tflops": 105.97579695519417,
+  "minimum_ms": 10.03542423248291,
+  "output_checksum_sample": -72.0712890625,
+  "p95_ms": 10.392352104187012,
+  "peak_allocated_memory_bytes": 545390592,
+  "schema_version": "forge.gpu-benchmark.v1",
+  "simulation": false,
+  "torch_version": "2.8.0+cu128",
+  "warmup_iterations": 5
+}

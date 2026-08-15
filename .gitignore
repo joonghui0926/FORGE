@@ -12,6 +12,7 @@ dist/
 build/
 delivery/
 artifacts/
+benchmarks/results/
 vendor-cache/
 *.mp4
 *.mov

@@ -18,7 +18,11 @@ def create_handler():
     processor = PaperPipelineProcessor()
     compiler = RunPodHandler(
         store=store,
-        processors={"reconstruction": processor, "retarget": processor},
+        processors={
+            "reconstruction": processor,
+            "retarget": processor,
+            "validate": processor,
+        },
         environment=os.getenv("FORGE_ENV", "production"),
     )
 

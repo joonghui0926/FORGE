@@ -41,6 +41,10 @@ class _ExternalAdapter:
         if completed.returncode != 0 or completed.stdout.strip() != self.revision:
             raise RuntimeError(f"PAPER_ADAPTER_REVISION_MISMATCH:{self.adapter_id}")
 
+    def assert_checkout(self, checkout: Path) -> None:
+        """Public preflight used by FORGE-owned wrappers around a pinned checkout."""
+        self._assert_checkout(checkout)
+
     def _execute(
         self,
         command: tuple[str, ...],
@@ -252,6 +256,3 @@ class GMRAdapter(_ExternalAdapter):
             "--save_path",
             str(output_file),
         )
-
-    def assert_checkout(self, checkout: Path) -> None:
-        self._assert_checkout(checkout)
