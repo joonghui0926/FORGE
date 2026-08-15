@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     branch: agent/forge-handoffs
-    buildCommand: pnpm install && pnpm --filter @forge/web build
+    buildCommand: NODE_ENV=development pnpm install && pnpm --filter @forge/web build
     startCommand: pnpm --filter @forge/web start
     autoDeploy: true
     envVars:
