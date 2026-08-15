@@ -53,10 +53,10 @@ export default async function OrdersPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-forge-border text-left">
-              <th className="pb-3 text-xs font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Skill name</th>
-              <th className="pb-3 text-xs font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Status</th>
-              <th className="pb-3 text-xs font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Episodes ordered</th>
-              <th className="pb-3 text-xs font-medium text-forge-ink-muted uppercase tracking-wide">Created</th>
+              <th className="pb-3 text-sm font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Skill name</th>
+              <th className="pb-3 text-sm font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Status</th>
+              <th className="pb-3 text-sm font-medium text-forge-ink-muted uppercase tracking-wide pr-6">Episodes ordered</th>
+              <th className="pb-3 text-sm font-medium text-forge-ink-muted uppercase tracking-wide">Created</th>
             </tr>
           </thead>
           <tbody>

@@ -11,5 +11,6 @@ declare module '@auth/core/jwt' {
   interface JWT {
     forgeToken?: string
     tenantId?: string
+    forgeTokenExp?: number
   }
 }

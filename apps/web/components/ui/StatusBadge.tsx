@@ -34,7 +34,7 @@ export function StatusBadge({ state, className = '' }: StatusBadgeProps) {
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-sm font-medium ${color} ${className}`}>
       <span aria-hidden="true">{icon}</span>
       {label}
-      {detail && <span className="opacity-60 text-xs">· {detail}</span>}
+      {detail && <span className="opacity-60 text-sm">· {detail}</span>}
     </span>
   )
 }

@@ -57,9 +57,9 @@ export function NewOrderStepper({ token }: NewOrderStepperProps) {
       }
     } catch (err) {
       setSubmitError(
-        err instanceof ApiError
-          ? `Order could not be placed: ${err.message}. Please try again.`
-          : 'Something went wrong. Please try again.',
+        err instanceof ApiError && err.status < 500
+          ? 'Please check your order details and try again.'
+          : 'We could not place your order. Please try again in a moment.',
       )
       setSubmitting(false)
     }
@@ -70,7 +70,7 @@ export function NewOrderStepper({ token }: NewOrderStepperProps) {
   return (
     <div className="max-w-xl">
       <div className="mb-2 flex items-center">
-        <span className="text-xs text-forge-ink-muted">Step {step + 1} of 6</span>
+        <span className="text-sm text-forge-ink-muted">Step {step + 1} of 6</span>
       </div>
       <div className="w-full bg-forge-surface-soft rounded-pill h-1.5 mb-8" role="progressbar"
            aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={6}>

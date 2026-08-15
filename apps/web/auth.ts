@@ -1,7 +1,6 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import GitHub from 'next-auth/providers/github'
-import Resend from 'next-auth/providers/resend'
 import { SignJWT } from 'jose'
 
 const jwtSecret = new TextEncoder().encode(process.env.AUTH_SECRET!)
@@ -16,10 +15,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.AUTH_GITHUB_ID!,
       clientSecret: process.env.AUTH_GITHUB_SECRET!,
     }),
-    Resend({
-      apiKey: process.env.AUTH_RESEND_KEY!,
-      from: 'FORGE <noreply@forge.app>',
-    }),
   ],
   session: { strategy: 'jwt' },
   pages: {
@@ -31,7 +26,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return !!user.email
     },
     async jwt({ token, user }) {
-      if (user?.email && !token.forgeToken) {
+      const now = Math.floor(Date.now() / 1000)
+      const needsMint = (user?.email && !token.forgeToken) ||
+        (token.forgeTokenExp as number | undefined && (token.forgeTokenExp as number) - now < 300)
+      if (user?.email && needsMint) {
         // Stub: email as tenant_id. Replace with DB lookup when tenant table is set up.
         const tenantId = user.email
         const forgeToken = await new SignJWT({ sub: user.email, tenant_id: tenantId })
@@ -40,6 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .sign(jwtSecret)
         token.forgeToken = forgeToken
         token.tenantId   = tenantId
+        token.forgeTokenExp = now + 3600
       }
       return token
     },

@@ -17,7 +17,7 @@ export function Field({ id, label, help, error, className = '', required, ...res
       <label htmlFor={id} className="text-sm font-medium text-forge-ink">
         {label}
         {!required && (
-          <span className="ml-1.5 text-xs font-normal text-forge-ink-muted">Optional</span>
+          <span className="ml-1.5 text-sm font-normal text-forge-ink-muted">Optional</span>
         )}
       </label>
       <input

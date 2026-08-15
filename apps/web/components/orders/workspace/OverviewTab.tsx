@@ -27,7 +27,7 @@ export function OverviewTab({ order }: OverviewTabProps) {
           <p className="mt-2 text-sm text-forge-ink-muted">{nextAction[order.state]}</p>
         )}
         {order.created_at && (
-          <p className="mt-1 text-xs text-forge-ink-subtle">
+          <p className="mt-1 text-sm text-forge-ink-subtle">
             Last updated: {new Date(order.created_at).toLocaleString('en-US')}
           </p>
         )}
@@ -59,7 +59,7 @@ export function OverviewTab({ order }: OverviewTabProps) {
             : 'Payment received. Billing details available in the Billing tab.'}
         </p>
         {billing && (
-          <p className="mt-1 text-xs text-forge-ink-muted">
+          <p className="mt-1 text-sm text-forge-ink-muted">
             Rights profile: {billing.replace(/_/g, ' ')}
           </p>
         )}

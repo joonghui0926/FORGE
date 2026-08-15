@@ -1,3 +1,7 @@
+import json
+import os
+import secrets
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Literal
@@ -7,6 +11,13 @@ from ..db import get_conn
 from ..models import TenantContext
 
 router = APIRouter()
+
+_STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+_STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+_APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:3000")
+
+def _new_id(prefix: str) -> str:
+    return f"{prefix}{secrets.token_urlsafe(12)}"
 
 
 class SkillSpec(BaseModel):
@@ -62,8 +73,55 @@ def create_order(
     body: CreateOrderRequest,
     ctx: TenantContext = Depends(require_tenant),
 ) -> OrderResponse:
-    # TODO: persist to DB, create Stripe payment intent
-    raise HTTPException(status_code=501, detail="Not implemented")
+    order_id = _new_id("ord_")
+    contract = {
+        "schema_version": "forge.order.v1",
+        "order_id": order_id,
+        "tenant_id": ctx.tenant_id,
+        "skill": body.skill.model_dump(),
+        "embodiment": body.embodiment.model_dump(),
+        "volume": {"validated_episodes": body.volume_validated_episodes},
+        "coverage": body.coverage.model_dump(),
+        "quality": body.quality.model_dump(),
+        "rights_profile": body.rights_profile,
+    }
+    with get_conn() as conn:
+        with conn.transaction():
+            conn.execute(
+                """
+                INSERT INTO dataset_orders
+                  (id, tenant_id, state, skill_name, contract)
+                VALUES (%s, %s, 'DRAFT', %s, %s::jsonb)
+                """,
+                (order_id, ctx.tenant_id, body.skill.name, json.dumps(contract)),
+            )
+            conn.execute(
+                """
+                INSERT INTO audit_events
+                  (entity_type, entity_id, action, actor, after_val)
+                VALUES ('dataset_order', %s, 'created', %s, %s::jsonb)
+                """,
+                (order_id, ctx.user_id, json.dumps({"state": "DRAFT", "skill_name": body.skill.name})),
+            )
+    stripe_payment_link: str | None = None
+    if _STRIPE_KEY and _STRIPE_PRICE_ID:
+        stripe.api_key = _STRIPE_KEY
+        try:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                line_items=[{"price": _STRIPE_PRICE_ID, "quantity": body.volume_validated_episodes}],
+                metadata={"order_id": order_id, "tenant_id": ctx.tenant_id},
+                success_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=success",
+                cancel_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=cancelled",
+            )
+            stripe_payment_link = session.url
+        except stripe.StripeError as exc:
+            raise HTTPException(status_code=502, detail=f"Stripe error: {exc.user_message}")
+    return OrderResponse(
+        order_id=order_id,
+        state="DRAFT",
+        stripe_payment_link=stripe_payment_link,
+    )
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

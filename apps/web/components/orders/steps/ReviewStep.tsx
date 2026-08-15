@@ -22,17 +22,17 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
     <div className="flex flex-col gap-6">
       <dl className="flex flex-col gap-4 text-sm">
         <div>
-          <dt className="text-xs font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Task</dt>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Task</dt>
           <dd className="text-forge-ink font-medium">{data.skill.name}</dd>
           <dd className="text-forge-ink-muted mt-0.5">{data.skill.initial_state} &rarr; {data.skill.success_predicate}</dd>
         </div>
         <div>
-          <dt className="text-xs font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Robot</dt>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Robot</dt>
           <dd className="text-forge-ink">{data.embodiment.robot_id} &middot; {data.embodiment.hand_type.replace(/_/g, ' ')}</dd>
-          <dd className="text-forge-ink-muted font-mono text-xs mt-0.5 break-all">{data.embodiment.model_uri}</dd>
+          <dd className="text-forge-ink-muted font-mono text-sm mt-0.5 break-all">{data.embodiment.model_uri}</dd>
         </div>
         <div>
-          <dt className="text-xs font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Coverage</dt>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Coverage</dt>
           <dd className="text-forge-ink">
             {data.coverage.object_ids.length > 0 ? data.coverage.object_ids.join(', ') : '—'}
           </dd>
@@ -41,11 +41,11 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
           )}
         </div>
         <div>
-          <dt className="text-xs font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Volume</dt>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Volume</dt>
           <dd className="text-forge-ink">{data.volume_validated_episodes} validated episodes</dd>
         </div>
         <div>
-          <dt className="text-xs font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Rights</dt>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Rights</dt>
           <dd className="text-forge-ink">{RIGHTS_LABELS[data.rights_profile] ?? data.rights_profile}</dd>
         </div>
       </dl>

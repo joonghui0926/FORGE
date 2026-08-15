@@ -49,7 +49,7 @@ export function RightsStep({ data, onChange, onNext, onBack }: RightsStepProps) 
             />
             <div>
               <p className="text-sm font-semibold text-forge-ink">{label}</p>
-              <p className="text-xs text-forge-ink-muted mt-0.5">{desc}</p>
+              <p className="text-sm text-forge-ink-muted mt-0.5">{desc}</p>
             </div>
           </label>
         ))}

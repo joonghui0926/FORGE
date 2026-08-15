@@ -50,12 +50,12 @@ export function NavBar({ authenticated }: NavBarProps) {
       <div>
         {authenticated ? (
           <Button variant="tertiary" onClick={() => signOut({ callbackUrl: '/' })}
-                  className="text-sm min-h-[36px]">
+                  className="text-sm min-h-[44px]">
             Sign out
           </Button>
         ) : (
           <Link href="/auth/signin">
-            <Button variant="secondary" className="text-sm min-h-[36px]">Sign in</Button>
+            <Button variant="secondary" className="text-sm min-h-[44px]">Sign in</Button>
           </Link>
         )}
       </div>

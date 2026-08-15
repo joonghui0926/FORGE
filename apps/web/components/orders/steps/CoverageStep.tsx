@@ -72,7 +72,7 @@ export function CoverageStep({ data, onChange, onNext, onBack }: CoverageStepPro
               />
               <div>
                 <p className="text-sm font-medium text-forge-ink">{label}</p>
-                <p className="text-xs text-forge-ink-muted">{desc}</p>
+                <p className="text-sm text-forge-ink-muted">{desc}</p>
               </div>
             </label>
           ))}

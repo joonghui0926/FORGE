@@ -1,9 +1,8 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Field } from '@/components/ui/Field'
 
 interface PageProps {
   searchParams: { callbackUrl?: string; error?: string }
@@ -18,7 +17,6 @@ const ERROR_TEXT: Record<string, string> = {
 }
 
 export default function SignInPage({ searchParams }: PageProps) {
-  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
   const callbackUrl = searchParams.callbackUrl ?? '/orders'
   const errorMsg = searchParams.error ? (ERROR_TEXT[searchParams.error] ?? ERROR_TEXT.Default) : null
@@ -26,13 +24,6 @@ export default function SignInPage({ searchParams }: PageProps) {
   async function handleProvider(provider: 'google' | 'github') {
     setLoading(provider)
     await signIn(provider, { callbackUrl })
-  }
-
-  async function handleEmail(e: FormEvent) {
-    e.preventDefault()
-    if (!email.trim()) return
-    setLoading('resend')
-    await signIn('resend', { email, callbackUrl })
   }
 
   return (
@@ -57,24 +48,6 @@ export default function SignInPage({ searchParams }: PageProps) {
             Continue with GitHub
           </Button>
         </div>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 h-px bg-forge-border" />
-          <span className="text-xs text-forge-ink-muted">or</span>
-          <div className="flex-1 h-px bg-forge-border" />
-        </div>
-
-        <form onSubmit={handleEmail} className="flex flex-col gap-4">
-          <Field
-            id="email" label="Email address" type="email"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com" required
-          />
-          <Button type="submit" variant="secondary"
-                  loading={loading === 'resend'} className="w-full justify-center">
-            Send magic link
-          </Button>
-        </form>
       </div>
     </div>
   )

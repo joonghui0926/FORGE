@@ -38,7 +38,7 @@ export function VolumeQualityStep({ volume, quality, onChangeVolume, onChangeQua
         />
         <div>
           <p className="text-sm font-medium text-forge-ink">Require source replay pass</p>
-          <p className="text-xs text-forge-ink-muted">
+          <p className="text-sm text-forge-ink-muted">
             Each episode must pass source replay before retargeting. Recommended.
           </p>
         </div>
