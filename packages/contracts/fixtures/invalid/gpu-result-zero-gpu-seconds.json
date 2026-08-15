@@ -1,0 +1,15 @@
+{
+  "_description": "gpu_seconds: 0 is only allowed in fixtures, not production. This fixture tests that the schema itself allows 0 (it does — enforcement is at the application layer, not schema layer). status must be a valid enum.",
+  "schema_version": "forge.gpu-result.v1",
+  "job_id": "job_test_bad",
+  "status": "unknown_status",
+  "artifacts": [],
+  "metrics": {
+    "frames_total": 0,
+    "frames_valid": 0,
+    "gpu_seconds": 0
+  },
+  "warnings": [],
+  "model_versions_uri": null,
+  "error": null
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.reconstruction.v1",
+  "title": "FORGE Metric 4D Reconstruction Result",
+  "type": "object",
+  "required": ["schema_version", "reconstruction_id", "capture_id", "job_id", "intrinsics_uri", "gravity_world", "depth_uri", "object_mesh_uri", "object_pose_uri", "hand_pose_uri", "tracking_confidence_uri", "invalid_frame_mask_uri", "frame_count", "pipeline_version", "provenance_parent_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.reconstruction.v1" },
+    "reconstruction_id": { "type": "string", "pattern": "^rec_" },
+    "capture_id": { "type": "string", "pattern": "^cap_" },
+    "job_id": { "type": "string", "pattern": "^job_" },
+    "intrinsics_uri": { "type": "string", "pattern": "^r2://" },
+    "gravity_world": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "depth_uri": { "type": "string", "pattern": "^r2://" },
+    "object_mesh_uri": { "type": "string", "pattern": "^r2://" },
+    "object_pose_uri": { "type": "string", "pattern": "^r2://" },
+    "hand_pose_uri": { "type": "string", "pattern": "^r2://" },
+    "tracking_confidence_uri": { "type": "string", "pattern": "^r2://" },
+    "invalid_frame_mask_uri": { "type": "string", "pattern": "^r2://" },
+    "frame_count": { "type": "integer", "minimum": 1 },
+    "coordinate_convention": {
+      "type": "object",
+      "properties": {
+        "unit": { "type": "string", "const": "meters" },
+        "angle_unit": { "type": "string", "const": "radians" },
+        "handedness": { "type": "string", "const": "right" }
+      }
+    },
+    "pipeline_version": { "type": "string" },
+    "simulation": { "type": "boolean", "default": false },
+    "provenance_parent_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

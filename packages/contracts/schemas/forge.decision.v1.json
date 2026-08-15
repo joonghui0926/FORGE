@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.decision.v1",
+  "title": "FORGE Band Decision",
+  "type": "object",
+  "required": ["schema_version", "decision_id", "order_id", "decision_type", "reason_codes", "evidence_artifact_ids", "confidence", "policy_version", "requires_human_approval"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.decision.v1" },
+    "decision_id": { "type": "string", "pattern": "^dec_" },
+    "order_id": { "type": "string", "pattern": "^ord_" },
+    "decision_type": {
+      "type": "string",
+      "enum": ["REPROCESS_WITH_CONFIG", "RECONSTRUCT_ASSET", "RECOLLECT_GENERAL", "RECOLLECT_EXPERT", "OPERATOR_REVIEW", "STOP_INFEASIBLE", "ACCEPT", "AMPLIFY"]
+    },
+    "reason_codes": { "type": "array", "items": { "type": "string" } },
+    "evidence_artifact_ids": { "type": "array", "items": { "type": "string" } },
+    "requested_captures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["object_id", "viewpoint_bin", "instruction_delta", "count", "worker_qualification"],
+        "additionalProperties": false,
+        "properties": {
+          "object_id": { "type": "string" },
+          "viewpoint_bin": { "type": "string" },
+          "instruction_delta": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 },
+          "worker_qualification": { "type": "string", "enum": ["general", "expert"] }
+        }
+      }
+    },
+    "operator_summary": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "policy_version": { "type": "string" },
+    "requires_human_approval": { "type": "boolean" }
+  }
+}

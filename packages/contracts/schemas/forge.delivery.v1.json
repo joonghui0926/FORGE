@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.delivery.v1",
+  "title": "FORGE Delivery Manifest",
+  "type": "object",
+  "required": ["schema_version", "order_id", "delivery_id", "dataset_version", "rights_profile", "source_summary", "episode_summary", "quality_summary_uri", "provenance_graph_uri", "model_versions_uri", "checksums_uri", "exports", "known_limitations", "created_from_pipeline_release"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.delivery.v1" },
+    "order_id": { "type": "string", "pattern": "^ord_" },
+    "delivery_id": { "type": "string", "pattern": "^del_" },
+    "dataset_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "rights_profile": { "type": "string" },
+    "source_summary": {
+      "type": "object",
+      "required": ["submitted", "accepted", "rejected"],
+      "additionalProperties": false,
+      "properties": {
+        "submitted": { "type": "integer", "minimum": 0 },
+        "accepted": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "episode_summary": {
+      "type": "object",
+      "required": ["generated", "validated", "delivered"],
+      "additionalProperties": false,
+      "properties": {
+        "generated": { "type": "integer", "minimum": 0 },
+        "validated": { "type": "integer", "minimum": 0 },
+        "delivered": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "quality_summary_uri": { "type": "string", "pattern": "^r2://" },
+    "provenance_graph_uri": { "type": "string", "pattern": "^r2://" },
+    "model_versions_uri": { "type": "string", "pattern": "^r2://" },
+    "checksums_uri": { "type": "string", "pattern": "^r2://" },
+    "exports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["format", "uri"],
+        "additionalProperties": false,
+        "properties": {
+          "format": { "type": "string", "enum": ["lerobot", "rlds", "customer_schema"] },
+          "uri": { "type": "string", "pattern": "^r2://" }
+        }
+      }
+    },
+    "known_limitations": { "type": "array", "items": { "type": "string" } },
+    "created_from_pipeline_release": { "type": "string" }
+  }
+}

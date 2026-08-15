@@ -1,0 +1,31 @@
+{
+  "_description": "Missing rights_profile — must fail validation at /rights_profile",
+  "schema_version": "forge.order.v1",
+  "order_id": "ord_test_bad",
+  "tenant_id": "ten_test_001",
+  "skill": {
+    "name": "open_and_close_bottle_cap",
+    "initial_state": "cap fully seated",
+    "success_predicate": "cap separates",
+    "failure_predicates": ["bottle falls"],
+    "phases": ["approach", "grasp"]
+  },
+  "embodiment": {
+    "robot_id": "inspire_hand_v1",
+    "model_uri": "r2://test-tenant/assets/inspire_hand.mjcf",
+    "model_sha256": "a3f1b2c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
+    "hand_type": "dexterous",
+    "joint_limits_uri": "r2://test-tenant/assets/limits.json"
+  },
+  "volume": { "validated_episodes": 100 },
+  "coverage": {
+    "object_ids": ["bottle_a"],
+    "viewpoint_bins": ["front"]
+  },
+  "quality": {
+    "source_replay_pass_required": true,
+    "max_penetration_m": 0.005,
+    "min_contact_phase_f1": 0.8,
+    "min_delivery_acceptance_rate": 0.9
+  }
+}

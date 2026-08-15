@@ -1,0 +1,20 @@
+{
+  "schema_version": "forge.gpu-result.v1",
+  "job_id": "job_test_001",
+  "status": "succeeded",
+  "artifacts": [
+    {
+      "kind": "object_pose",
+      "uri": "r2://test-tenant/artifacts/job_test_001/object_pose.npz",
+      "sha256": "b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2"
+    }
+  ],
+  "metrics": {
+    "frames_total": 180,
+    "frames_valid": 172,
+    "gpu_seconds": 45.3
+  },
+  "warnings": [],
+  "model_versions_uri": "r2://test-tenant/artifacts/job_test_001/model_versions.json",
+  "error": null
+}

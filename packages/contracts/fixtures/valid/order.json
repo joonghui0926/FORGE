@@ -1,0 +1,32 @@
+{
+  "schema_version": "forge.order.v1",
+  "order_id": "ord_test_001",
+  "tenant_id": "ten_test_001",
+  "skill": {
+    "name": "open_and_close_bottle_cap",
+    "initial_state": "cap fully seated",
+    "success_predicate": "cap separates, then returns to seated pose",
+    "failure_predicates": ["bottle falls", "cap leaves workspace"],
+    "phases": ["approach", "grasp", "twist_open", "release", "regrasp", "twist_close"]
+  },
+  "embodiment": {
+    "robot_id": "inspire_hand_v1",
+    "model_uri": "r2://test-tenant/assets/inspire_hand.mjcf",
+    "model_sha256": "a3f1b2c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
+    "hand_type": "dexterous",
+    "joint_limits_uri": "r2://test-tenant/assets/inspire_hand_limits.json"
+  },
+  "volume": { "validated_episodes": 1000 },
+  "coverage": {
+    "object_ids": ["bottle_a", "bottle_b"],
+    "viewpoint_bins": ["front", "front_left", "front_right"],
+    "grasp_variation": "required"
+  },
+  "quality": {
+    "source_replay_pass_required": true,
+    "max_penetration_m": 0.005,
+    "min_contact_phase_f1": 0.8,
+    "min_delivery_acceptance_rate": 0.9
+  },
+  "rights_profile": "customer_exclusive_derivatives"
+}

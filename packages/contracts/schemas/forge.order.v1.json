@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.order.v1",
+  "title": "FORGE Order Contract",
+  "type": "object",
+  "required": ["schema_version", "order_id", "tenant_id", "skill", "embodiment", "volume", "coverage", "quality", "rights_profile"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.order.v1" },
+    "order_id": { "type": "string", "pattern": "^ord_" },
+    "tenant_id": { "type": "string", "pattern": "^ten_" },
+    "skill": {
+      "type": "object",
+      "required": ["name", "initial_state", "success_predicate", "failure_predicates", "phases"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "initial_state": { "type": "string" },
+        "success_predicate": { "type": "string" },
+        "failure_predicates": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "phases": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "embodiment": {
+      "type": "object",
+      "required": ["robot_id", "model_uri", "model_sha256", "hand_type", "joint_limits_uri"],
+      "additionalProperties": false,
+      "properties": {
+        "robot_id": { "type": "string" },
+        "model_uri": { "type": "string", "pattern": "^r2://" },
+        "model_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "hand_type": { "type": "string", "enum": ["dexterous", "parallel_gripper", "suction"] },
+        "joint_limits_uri": { "type": "string", "pattern": "^r2://" }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "required": ["validated_episodes"],
+      "additionalProperties": false,
+      "properties": {
+        "validated_episodes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["object_ids", "viewpoint_bins"],
+      "additionalProperties": false,
+      "properties": {
+        "object_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "viewpoint_bins": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "grasp_variation": { "type": "string", "enum": ["required", "preferred", "not_required"] }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["source_replay_pass_required", "max_penetration_m", "min_contact_phase_f1", "min_delivery_acceptance_rate"],
+      "additionalProperties": false,
+      "properties": {
+        "source_replay_pass_required": { "type": "boolean" },
+        "max_penetration_m": { "type": "number", "minimum": 0 },
+        "min_contact_phase_f1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "min_delivery_acceptance_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "rights_profile": { "type": "string", "enum": ["customer_exclusive_derivatives", "forge_retained", "open"] }
+  }
+}

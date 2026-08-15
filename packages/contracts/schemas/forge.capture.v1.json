@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.capture.v1",
+  "title": "FORGE Capture Record",
+  "type": "object",
+  "required": ["schema_version", "capture_id", "order_id", "worker_subject_id", "protocol_version", "video_uri", "sha256", "mime_type", "device", "object_id", "viewpoint_bin", "consent_receipt_uri", "submitted_at", "declared_rights"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.capture.v1" },
+    "capture_id": { "type": "string", "pattern": "^cap_" },
+    "order_id": { "type": "string", "pattern": "^ord_" },
+    "worker_subject_id": { "type": "string", "pattern": "^sub_pseudonymous_" },
+    "protocol_version": { "type": "string" },
+    "video_uri": { "type": "string", "pattern": "^r2://" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mime_type": { "type": "string", "enum": ["video/mp4", "video/webm"] },
+    "device": {
+      "type": "object",
+      "required": ["orientation", "camera_facing"],
+      "additionalProperties": false,
+      "properties": {
+        "orientation": { "type": "string", "enum": ["landscape", "portrait"] },
+        "camera_facing": { "type": "string", "enum": ["rear", "front"] }
+      }
+    },
+    "object_id": { "type": "string" },
+    "viewpoint_bin": { "type": "string" },
+    "consent_receipt_uri": { "type": "string", "pattern": "^r2://" },
+    "submitted_at": { "type": "string", "format": "date-time" },
+    "declared_rights": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["process", "derive", "train", "deliver_to_named_customer", "retain"] },
+      "minItems": 1
+    }
+  }
+}

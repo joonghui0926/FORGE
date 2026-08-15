@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.robot-trajectory.v1",
+  "title": "FORGE Robot Trajectory",
+  "type": "object",
+  "required": ["schema_version", "trajectory_id", "skill_ir_id", "robot_id", "retarget_path", "qpos_uri", "end_effector_uri", "gripper_uri", "replay_report_uri", "config_hash", "provenance_parent_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.robot-trajectory.v1" },
+    "trajectory_id": { "type": "string", "pattern": "^traj_" },
+    "skill_ir_id": { "type": "string", "pattern": "^sir_" },
+    "robot_id": { "type": "string" },
+    "retarget_path": { "type": "string", "enum": ["fast", "heavy"] },
+    "verified_level": {
+      "type": "string",
+      "enum": ["verified_simulation", "verified_real"],
+      "description": "fast or heavy path without real robot run must remain verified_simulation"
+    },
+    "qpos_uri": { "type": "string", "pattern": "^r2://" },
+    "end_effector_uri": { "type": "string", "pattern": "^r2://" },
+    "gripper_uri": { "type": "string", "pattern": "^r2://" },
+    "replay_report_uri": { "type": "string", "pattern": "^r2://" },
+    "config_hash": { "type": "string" },
+    "simulation": { "type": "boolean", "default": false },
+    "provenance_parent_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

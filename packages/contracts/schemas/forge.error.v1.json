@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.error.v1",
+  "title": "FORGE Structured Error",
+  "type": "object",
+  "required": ["schema_version", "code", "message", "retryable"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.error.v1" },
+    "code": {
+      "type": "string",
+      "enum": [
+        "INFRA_TRANSIENT",
+        "PROVIDER_CAPACITY",
+        "INPUT_FETCH_FAILED",
+        "INPUT_INVALID",
+        "MODEL_WEIGHT_MISSING",
+        "MODEL_INFERENCE_FAILED",
+        "GPU_OOM",
+        "ARTIFACT_UPLOAD_FAILED",
+        "SCHEMA_VALIDATION_FAILED",
+        "QUALITY_INSUFFICIENT",
+        "LICENSE_BLOCKED",
+        "VIDEO_CORRUPT",
+        "DURATION_OUT_OF_RANGE",
+        "RESOLUTION_TOO_LOW",
+        "CAMERA_MOTION_EXCESSIVE",
+        "HAND_NOT_VISIBLE",
+        "OBJECT_NOT_VISIBLE",
+        "CONTACT_REGION_OCCLUDED",
+        "TASK_INCOMPLETE",
+        "WRONG_OBJECT",
+        "WRONG_VIEWPOINT",
+        "RIGHTS_MISSING"
+      ]
+    },
+    "message": { "type": "string" },
+    "retryable": { "type": "boolean" },
+    "job_id": { "type": "string" },
+    "artifact_id": { "type": "string" },
+    "detail": { "type": "object" }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.gpu-result.v1",
+  "title": "FORGE GPU Job Result",
+  "type": "object",
+  "required": ["schema_version", "job_id", "status", "artifacts", "metrics", "warnings", "model_versions_uri", "error"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.gpu-result.v1" },
+    "job_id": { "type": "string", "pattern": "^job_" },
+    "status": { "type": "string", "enum": ["succeeded", "failed", "quality_insufficient"] },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "uri", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string" },
+          "uri": { "type": "string", "pattern": "^r2://" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["frames_total", "frames_valid", "gpu_seconds"],
+      "properties": {
+        "frames_total": { "type": "integer", "minimum": 0 },
+        "frames_valid": { "type": "integer", "minimum": 0 },
+        "gpu_seconds": { "type": "number", "minimum": 0 }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "model_versions_uri": { "type": ["string", "null"], "pattern": "^r2://" },
+    "error": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["code", "message"],
+          "additionalProperties": false,
+          "properties": {
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          }
+        }
+      ]
+    }
+  }
+}

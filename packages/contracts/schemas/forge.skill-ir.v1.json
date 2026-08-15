@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forge.skill-ir.v1",
+  "title": "FORGE Canonical Skill IR",
+  "type": "object",
+  "required": ["schema_version", "skill_ir_id", "source_reconstruction_id", "canonical_object", "trajectory", "phases", "gravity_world", "quality", "provenance_parent_ids"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "forge.skill-ir.v1" },
+    "skill_ir_id": { "type": "string", "pattern": "^sir_" },
+    "source_reconstruction_id": { "type": "string", "pattern": "^rec_" },
+    "canonical_object": {
+      "type": "object",
+      "required": ["asset_uri", "asset_sha256", "scale_m", "canonical_frame"],
+      "additionalProperties": false,
+      "properties": {
+        "asset_uri": { "type": "string", "pattern": "^r2://" },
+        "asset_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "scale_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+        "canonical_frame": { "type": "string" }
+      }
+    },
+    "trajectory": {
+      "type": "object",
+      "required": ["timestamps_s", "T_world_object", "T_object_wrist", "hand_configuration"],
+      "additionalProperties": false,
+      "properties": {
+        "timestamps_s": { "type": "array", "items": { "type": "number" } },
+        "T_world_object": { "type": "array", "items": { "type": "string" } },
+        "T_object_wrist": { "type": "array", "items": { "type": "string" } },
+        "hand_configuration": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "start_frame", "end_frame", "stable_contacts"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "start_frame": { "type": "integer", "minimum": 0 },
+          "end_frame": { "type": "integer", "minimum": 0 },
+          "stable_contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["object_surface_point", "object_surface_normal", "hand_region", "support"],
+              "additionalProperties": false,
+              "properties": {
+                "object_surface_point": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+                "object_surface_normal": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+                "hand_region": { "type": "string" },
+                "support": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "gravity_world": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+    "quality": {
+      "type": "object",
+      "required": ["contact_observability", "temporal_pose_consistency", "accepted", "reason_codes"],
+      "additionalProperties": false,
+      "properties": {
+        "contact_observability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "temporal_pose_consistency": { "type": "number", "minimum": 0, "maximum": 1 },
+        "accepted": { "type": "boolean" },
+        "reason_codes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "simulation": { "type": "boolean", "default": false },
+    "provenance_parent_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}
