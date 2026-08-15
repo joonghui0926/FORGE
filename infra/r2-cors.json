@@ -1,0 +1,8 @@
+[
+  {
+    "AllowedOrigins": ["http://localhost:3000", "https://forge.app"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "MaxAgeSeconds": 3000
+  }
+]
