@@ -76,3 +76,47 @@ export interface CreateOrderResponse {
   state: OrderState
   stripe_payment_link: string | null
 }
+
+export interface OrderFormData {
+  skill: {
+    name: string
+    initial_state: string
+    success_predicate: string
+    failure_predicates: string[]
+    phases: string[]
+  }
+  embodiment: {
+    robot_id: string
+    model_uri: string
+    model_sha256: string
+    hand_type: 'dexterous' | 'parallel_gripper' | 'suction'
+    joint_limits_uri: string
+  }
+  coverage: {
+    object_ids: string[]
+    viewpoint_bins: string[]
+    grasp_variation: 'required' | 'preferred' | 'not_required'
+  }
+  volume_validated_episodes: number
+  quality: {
+    source_replay_pass_required: boolean
+    max_penetration_m: number
+    min_contact_phase_f1: number
+    min_delivery_acceptance_rate: number
+  }
+  rights_profile: 'customer_exclusive_derivatives' | 'forge_retained' | 'open'
+}
+
+export const INITIAL_ORDER_FORM_DATA: OrderFormData = {
+  skill: { name: '', initial_state: '', success_predicate: '', failure_predicates: [], phases: [] },
+  embodiment: { robot_id: '', model_uri: '', model_sha256: '', hand_type: 'parallel_gripper', joint_limits_uri: '' },
+  coverage: { object_ids: [], viewpoint_bins: [], grasp_variation: 'preferred' },
+  volume_validated_episodes: 10,
+  quality: {
+    source_replay_pass_required: true,
+    max_penetration_m: 0.002,
+    min_contact_phase_f1: 0.8,
+    min_delivery_acceptance_rate: 0.9,
+  },
+  rights_profile: 'customer_exclusive_derivatives',
+}

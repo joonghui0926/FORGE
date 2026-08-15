@@ -1,0 +1,113 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { OrderFormData, INITIAL_ORDER_FORM_DATA, CreateOrderResponse } from '@/lib/types'
+import { apiFetch, ApiError } from '@/lib/api'
+import { SkillStep } from './steps/SkillStep'
+import { RobotStep } from './steps/RobotStep'
+import { CoverageStep } from './steps/CoverageStep'
+import { VolumeQualityStep } from './steps/VolumeQualityStep'
+import { RightsStep } from './steps/RightsStep'
+import { ReviewStep } from './steps/ReviewStep'
+
+const STEP_TITLES = [
+  'What should the robot do?',
+  'Which robot and hand?',
+  'Which objects and viewpoints?',
+  'How many episodes and what quality bar?',
+  'Who owns the data?',
+  'Does this look right?',
+]
+
+interface NewOrderStepperProps {
+  token: string
+}
+
+export function NewOrderStepper({ token }: NewOrderStepperProps) {
+  const [step, setStep] = useState(0)
+  const [data, setData] = useState<OrderFormData>(INITIAL_ORDER_FORM_DATA)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const router = useRouter()
+
+  function update<K extends keyof OrderFormData>(key: K, value: OrderFormData[K]) {
+    setData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      const res = await apiFetch<CreateOrderResponse>('/orders', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          skill:                     data.skill,
+          embodiment:                data.embodiment,
+          volume_validated_episodes: data.volume_validated_episodes,
+          coverage:                  data.coverage,
+          quality:                   data.quality,
+          rights_profile:            data.rights_profile,
+        }),
+      })
+      if (res.stripe_payment_link) {
+        window.location.href = res.stripe_payment_link
+      } else {
+        router.push(`/orders/${res.order_id}`)
+      }
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? `Order could not be placed: ${err.message}. Please try again.`
+          : 'Something went wrong. Please try again.',
+      )
+      setSubmitting(false)
+    }
+  }
+
+  const progress = ((step + 1) / 6) * 100
+
+  return (
+    <div className="max-w-xl">
+      <div className="mb-2 flex items-center">
+        <span className="text-xs text-forge-ink-muted">Step {step + 1} of 6</span>
+      </div>
+      <div className="w-full bg-forge-surface-soft rounded-pill h-1.5 mb-8" role="progressbar"
+           aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={6}>
+        <div className="bg-forge-primary rounded-pill h-1.5 transition-all duration-300"
+             style={{ width: `${progress}%` }} />
+      </div>
+
+      <h2 className="text-xl font-semibold text-forge-ink mb-6">{STEP_TITLES[step]}</h2>
+
+      {step === 0 && (
+        <SkillStep data={data.skill} onChange={(v) => update('skill', v)}
+                   onNext={() => setStep(1)} />
+      )}
+      {step === 1 && (
+        <RobotStep data={data.embodiment} onChange={(v) => update('embodiment', v)}
+                   onNext={() => setStep(2)} onBack={() => setStep(0)} />
+      )}
+      {step === 2 && (
+        <CoverageStep data={data.coverage} onChange={(v) => update('coverage', v)}
+                      onNext={() => setStep(3)} onBack={() => setStep(1)} />
+      )}
+      {step === 3 && (
+        <VolumeQualityStep
+          volume={data.volume_validated_episodes}
+          quality={data.quality}
+          onChangeVolume={(v) => update('volume_validated_episodes', v)}
+          onChangeQuality={(v) => update('quality', v)}
+          onNext={() => setStep(4)} onBack={() => setStep(2)} />
+      )}
+      {step === 4 && (
+        <RightsStep data={data.rights_profile} onChange={(v) => update('rights_profile', v)}
+                    onNext={() => setStep(5)} onBack={() => setStep(3)} />
+      )}
+      {step === 5 && (
+        <ReviewStep data={data} onBack={() => setStep(4)}
+                    onSubmit={handleSubmit} submitting={submitting} error={submitError} />
+      )}
+    </div>
+  )
+}
