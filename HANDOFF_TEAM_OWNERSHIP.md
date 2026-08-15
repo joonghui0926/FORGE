@@ -31,7 +31,7 @@ Order → Capture → GPU Job → Reconstruction → Skill IR
 3. 실제 작업자가 capture UI를 통해 권리 동의와 함께 영상을 제출한다.
 4. 영상이 R2에 immutable raw artifact로 저장된다.
 5. RunPod GPU worker가 metric 4D reconstruction, stable contact, Skill IR, robot retarget/replay 결과를 만든다.
-6. 품질이 부족하면 Band가 evidence 기반 recollection을 요청하고 새로운 Terac batch가 열린다.
+6. Pioneer가 learned quality verdict와 다음 촬영 예측을 만들고, Band가 deterministic evidence와 이를 결합해 recollection을 요청한다.
 7. source validation을 통과한 demonstration만 증폭된다.
 8. 검증된 episode, quality report, provenance, rights, checksum, 표준 export가 고객에게 전달된다.
 9. UI나 발표에 표시한 숫자는 실제 DB/artifact에서 계산된다.
@@ -46,13 +46,14 @@ Order → Capture → GPU Job → Reconstruction → Skill IR
 | `workers/contact/**` | Joonghui | Inseon | C2Dex-derived stable-contact compiler |
 | `workers/retarget/**` | Joonghui | Inseon | kinematic/heavy robot retargeting |
 | `workers/validate/**` | Joonghui | Inseon | source physics/batch quality computation |
+| `packages/quality-model/**` | Joonghui | Inseon | Pioneer feature/label 의미와 offline evaluation 기준 |
 | `workers/package/**` | Joonghui | Inseon | canonical artifact에서 dataset export 생성 |
 | `infra/runpod/**` | Joonghui | Inseon | endpoint image, handler, GPU class config |
 | `third_party/**` | Joonghui | Inseon | commit/weight/license lock |
 | `apps/web/**` | Inseon | Joonghui | customer, capture, operator, delivery UI |
 | `services/api/**` | Inseon | Joonghui | auth, order, artifact metadata, signed URL, webhook |
 | `services/workflows/**` | Inseon | Joonghui | Render Workflows DAG와 activity |
-| `integrations/**` | Inseon | Joonghui | Terac, Band, R2, Stripe, Linq; RunPod client 포함 |
+| `integrations/**` | Inseon | Joonghui | Terac, Band, Pioneer, R2, Stripe, Linq; RunPod client 포함 |
 | `infra/render/**` | Inseon | Joonghui | web/API/workflow/Postgres deployment |
 | `packages/ui/**` | Inseon | Joonghui | 디자인 token, primitive, accessibility |
 | `packages/db/**` | Inseon | Joonghui | schema/migration/repository |
@@ -100,6 +101,8 @@ forge.reconstruction.v1
 forge.skill-ir.v1
 forge.robot-trajectory.v1
 forge.quality-result.v1
+forge.qc-features.v1
+forge.pioneer-verdict.v1
 forge.decision.v1
 forge.delivery.v1
 forge.error.v1
@@ -274,7 +277,21 @@ DemoGen-style SE(3) variation을 구현할 때:
 - 실패 variation은 별도 reason으로 보존
 - source group 단위 split으로 leakage 방지
 
-#### H. RunPod handler
+#### H. Pioneer feature, label, evaluation ownership
+
+Joonghui는 Pioneer API client가 아니라 **모델이 배워야 하는 품질 문제의 의미**를 소유한다.
+
+- capture, reconstruction, contact, retarget, physics metric을 비식별 `qc-features.v1`로 정의
+- usable/physics-pass/recollect/operator-review ground-truth label 규칙 정의
+- 같은 source/performer/object가 train과 validation에 섞이지 않는 group split
+- false accept를 우선 억제하는 offline metric과 calibration 기준 제안
+- base, fine-tuned champion, challenger의 held-out 결과 비교
+- 모델이 deterministic hard fail을 뒤집지 못하는 policy test
+- prediction drift와 recollection lift 분석
+
+Pioneer fine-tuning dataset에 raw video나 PII를 넣지 않는다. label과 구조화 metric은 parent quality run까지 provenance를 가진다.
+
+#### I. RunPod handler
 
 필수 endpoint semantics:
 
@@ -290,7 +307,7 @@ FORGE callback/result: forge.gpu-result.v1
 - secrets는 environment/secret mount에서 읽는다.
 - job payload에 raw API key를 넣지 않는다.
 
-#### I. Compute profiling
+#### J. Compute profiling
 
 fixture와 실제 capture에서 다음 표를 만든다.
 
@@ -310,6 +327,8 @@ fixture와 실제 capture에서 다음 표를 만든다.
 - stable-contact 최소 구현과 evidence
 - target MJCF fast retarget
 - source quality result
+- `qc-features`/`pioneer-verdict` 계약과 labeled fixture
+- Pioneer base/fine-tuned model acceptance metric 정의
 - RunPod async handler
 - R2 input/output integration test
 
@@ -325,7 +344,6 @@ fixture와 실제 capture에서 다음 표를 만든다.
 
 #### P2 — 근거가 생긴 뒤 확장
 
-- Pioneer learned QC
 - 추가 robot embodiment adapters
 - full C2Dex official code 비교 또는 residual policy 연구
 - expert task와 multi-object scene
@@ -448,7 +466,10 @@ order_paid
   → await_or_poll_submissions
   → fan_out_pre_qc
   → fan_out_gpu_reconstruction
-  → fan_out_contact_retarget_validate
+  → fan_out_contact_and_fast_retarget
+  → fan_out_pioneer_pre_heavy_inference
+  → fan_out_heavy_retarget_validate
+  → fan_out_pioneer_post_replay_inference
   → aggregate_coverage_and_quality
   → request_band_decision
       ├─ recollect → create_terac_batch
@@ -481,7 +502,24 @@ Band가 `RECOLLECT`를 결정할 때 Inseon은 다음을 검증한다.
 - 동일한 실패 지시를 무한 반복하지 않는가
 - 필요한 human approval flag가 있는가
 
-#### G. Stripe와 BM surface
+#### G. Pioneer core integration
+
+Pioneer는 초기부터 모든 production capture/source가 거치는 필수 quality specialist다. Inseon은 다음 runtime과 learning lifecycle을 소유한다.
+
+- `integrations/pioneer`의 authenticated API client와 retry/error mapping
+- base/open-weight model을 이용한 schema-constrained `pioneer-verdict.v1` inference
+- prediction에 project/model/training-job/evaluation/deployment version 저장
+- Joonghui가 정의한 label을 JSONL dataset으로 만들고 Pioneer upload flow 실행
+- fine-tuning job 생성·상태 polling·checkpoint/deployment 기록
+- held-out evaluation 결과를 model registry에 저장
+- 합의된 acceptance 기준을 통과한 model만 champion으로 승격
+- Band가 deterministic result와 Pioneer verdict를 모두 받도록 workflow 연결
+
+Pioneer가 unavailable이거나 schema-invalid output을 반환하면 workflow는 `LEARNED_QC_PENDING`에 머문다. production에서 base model, 이전 model 또는 rule-only path로 조용히 fallback하지 않는다. manual override는 명시적 operator action과 audit evidence가 있어야 한다.
+
+Pioneer API에는 pseudonymous ID와 구조화 metric/label만 전송한다. raw capture, 얼굴, worker identity, consent 원문, signed R2 URL은 전송하지 않는다.
+
+#### H. Stripe와 BM surface
 
 - pilot Payment Link 또는 Checkout을 order와 연결한다.
 - verified webhook만 payment state의 권위로 사용한다.
@@ -492,7 +530,7 @@ Band가 `RECOLLECT`를 결정할 때 Inseon은 다음을 검증한다.
 
 live payment, 법인/세금, 환불 문구는 owner 승인 없이 임의 활성화하지 않는다.
 
-#### H. Operator console
+#### I. Operator console
 
 operator가 한 화면에서 다음을 판단할 수 있어야 한다.
 
@@ -501,13 +539,14 @@ operator가 한 화면에서 다음을 판단할 수 있어야 한다.
 - funnel count와 비용
 - capture/reconstruction/contact/replay evidence
 - quality reason code와 confidence
+- Pioneer usable/physics-pass score, model version, calibration/evaluation 상태
 - Band 결정과 근거
 - retry/reprocess/recollect/stop/approve action
 - 모든 manual action의 audit trail
 
 검토 UI는 예쁜 video player만 만들지 않는다. 원본/overlay/replay, phase, metric, threshold, lineage를 함께 보여준다.
 
-#### I. Delivery와 고객 소유권
+#### J. Delivery와 고객 소유권
 
 - immutable delivery version 생성
 - checksum과 loader smoke test 표시
@@ -517,7 +556,7 @@ operator가 한 화면에서 다음을 판단할 수 있어야 한다.
 - known limitation과 rejected count 공개
 - 재생성 시 새 semantic version과 lineage 연결
 
-#### J. Domain, security, observability
+#### K. Domain, security, observability
 
 - Cloudflare DNS와 TLS
 - production/staging 분리
@@ -539,6 +578,7 @@ operator가 한 화면에서 다음을 판단할 수 있어야 한다.
 - Render Workflow state machine
 - Terac adapter + 실제 capability inventory
 - Band schema-valid acquisition/recollection decision
+- Pioneer base-model inference, verdict schema validation, model registry
 - Stripe test payment/webhook
 - operator order/coverage/quality view
 
@@ -548,6 +588,7 @@ operator가 한 화면에서 다음을 판단할 수 있어야 한다.
 - Terac real campaign/submission
 - replay evidence review UI
 - recollection loop
+- labeled QC dataset → Pioneer fine-tuning → held-out evaluation → champion promotion
 - signed delivery portal
 - domain/TLS/staging-production setup
 - audit/security/tenant isolation tests
@@ -580,6 +621,8 @@ Inseon은 제품 요구와 evidence 소비 형식을 contract로 제공하고 Jo
 - raw media가 API server를 통과하지 않고 R2에 안전하게 올라간다.
 - workflow retry가 주문, 결제, Terac task, GPU job을 중복 생성하지 않는다.
 - Band output이 schema-invalid이면 state가 바뀌지 않는다.
+- Pioneer는 모든 production source에 versioned verdict를 만들고, unavailable/schema-invalid이면 fail-closed한다.
+- fine-tuned model은 held-out evaluation과 promotion audit를 가진다.
 - actual Terac submission 또는 명확히 표기된 provider limitation evidence가 있다.
 - Stripe verified webhook이 paid order를 만든다.
 - 실제 Joonghui worker를 mock 변경 없이 호출한다.
@@ -597,7 +640,9 @@ Inseon은 제품 요구와 evidence 소비 형식을 contract로 제공하고 Jo
 | Inseon | Joonghui | GPU job result | schema-valid fake GPU server | actual RunPod job 통과 |
 | Inseon | Joonghui | evidence previews | golden PNG/MP4 fixture | actual reconstruction evidence 통과 |
 | Inseon | Joonghui | quality/reason codes | fixed pass/fail/occlusion fixtures | real capture results 통과 |
+| Inseon | Joonghui | Pioneer feature/label/evaluation semantics | versioned labeled QC fixture | real physics/operator labels 통과 |
 | Inseon | Terac | campaign/submission API | mock provider adapter | real task submission 통과 |
+| Inseon | Pioneer | inference/training/evaluation API | schema-valid simulated provider | actual Pioneer base-model verdict 통과 |
 | Inseon | Band | structured decision | deterministic rule fixture | live schema-valid decision 통과 |
 
 Mock 규칙:
@@ -614,9 +659,11 @@ Mock 규칙:
 | GPU/model/reconstruction 선택 | Joonghui | Inseon이 비용·제품 영향 review |
 | Skill IR/contact 의미 | Joonghui | Inseon이 storage/API compatibility review |
 | 고객 flow/capture UX | Inseon | Joonghui가 technical observability review |
-| Terac/Band/Render integration | Inseon | Joonghui가 input quality/worker contract review |
+| Terac/Band/Pioneer/Render integration | Inseon | Joonghui가 input·label·quality contract review |
 | DB와 state machine | Inseon | Joonghui가 GPU retry/idempotency review |
 | quality metric 계산 | Joonghui | Inseon이 고객 설명과 사업 영향 review |
+| Pioneer feature/label/evaluation 기준 | Joonghui | Inseon이 API·운영·비용 영향 review |
+| Pioneer model deployment/promotion | 공동 | held-out evaluation과 rollback evidence 필요 |
 | delivery acceptance threshold | 공동 | calibration evidence 필요 |
 | schema breaking change | 공동 | version/migration/fixtures 필요 |
 | budget/GPU class/live spend | 공동 | profile과 guardrail 필요 |
@@ -713,14 +760,17 @@ GPU/API 비용 변화, secret/PII/license 영향
 
 - FORGE protocol real capture가 Skill IR과 target robot trajectory 생성
 - source validation pass 또는 evidence 있는 fail
+- actual Pioneer endpoint가 versioned `pioneer-verdict`를 생성
+- deterministic hard gate와 Pioneer verdict가 충돌해도 hard gate가 유지됨
 - failure는 infrastructure failure와 quality failure로 구분
 - 실제 measured funnel에 반영
 
 ### Gate I4 — Recollection
 
-- Band가 결손 cell/reason을 구조화된 decision으로 반환
+- Band가 deterministic metric과 Pioneer verdict를 받아 결손 cell/reason을 구조화된 decision으로 반환
 - Render가 Terac에 새로운 capture instruction을 발행
 - original fail → decision → new capture → new result lineage 완전
+- 실제 label dataset, Pioneer fine-tuning job, held-out evaluation과 champion promotion audit 존재
 - cohort A/B 개선 metric 계산
 
 ### Gate I5 — Paid delivery
@@ -792,6 +842,7 @@ one concrete integration action and acceptance condition
 
 - Terac 외부 upload/event API 불명확
 - Band output retention/schema 불명확
+- Pioneer model catalog/inference/training/evaluation API 또는 account access 불명확
 - Stripe live/legal account 미승인
 - Cloudflare domain/account access 부재
 - actual GPU endpoint 미준비
@@ -814,7 +865,8 @@ one concrete integration action and acceptance condition
 HANDOFF_PRODUCT_AND_ARCHITECTURE.md, HANDOFF_TEAM_OWNERSHIP.md,
 HANDOFF_UI_DESIGN_SYSTEM.md와 현재 repository/issue/PR을 먼저 읽어라.
 
-workers/**, infra/runpod/**, third_party/**와 packages/skill-ir/**의 기술 의미를
+workers/**, infra/runpod/**, third_party/**, packages/skill-ir/**와
+packages/quality-model/**의 기술 의미를
 소유한다. 가장 앞의 미통과 integration gate를 찾고, 먼저 계약과 fixture를
 검증한 뒤 하나의 end-to-end vertical을 완성하라.
 
@@ -836,7 +888,8 @@ HANDOFF_UI_DESIGN_SYSTEM.md와 현재 repository/issue/PR을 먼저 읽어라.
 
 apps/web/**, services/**, integrations/**, infra/render/**, packages/db/**,
 packages/ui/**를 소유한다. 고객 주문부터 Terac capture, R2, Render Workflow,
-Band decision, RunPod, Stripe, delivery까지 가장 앞의 미통과 gate를 완성하라.
+Pioneer learned-quality verdict, Band decision, RunPod, Stripe, delivery까지 가장
+앞의 미통과 gate를 완성하라.
 
 GPU가 준비되지 않았으면 versioned fake server로 계약을 구현하되 모든 화면과
 event에 simulated를 표시하고 실제 provider gate가 통과하면 제거하라. UI는
@@ -858,7 +911,9 @@ input/output을 PR과 handoff 형식으로 남겨라.
 - [ ] Render Workflow가 actual RunPod job을 orchestration했다.
 - [ ] reconstruction → stable contact → Skill IR이 실제 artifact를 만들었다.
 - [ ] retarget/replay가 pass 또는 증거 있는 fail을 냈다.
-- [ ] quality fail이 Band decision과 Terac recollection으로 연결되었다.
+- [ ] 모든 production source에 actual Pioneer model/evaluation lineage가 있는 verdict가 있다.
+- [ ] 실제 label로 Pioneer fine-tuning/evaluation/promotion loop가 실행되었다.
+- [ ] quality fail이 Pioneer verdict, Band decision과 Terac recollection으로 연결되었다.
 - [ ] accepted source만 증폭되었다.
 - [ ] generated episode가 batch QC를 다시 통과했다.
 - [ ] Stripe verified payment와 order가 연결되었다.
