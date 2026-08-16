@@ -42,6 +42,7 @@ export interface Order {
   volume_validated_episodes?: number
   contract?: Record<string, unknown>
   pipeline?: PipelineEvent[]
+  workspace?: OrderWorkspace
 }
 
 export interface PipelineEvent {
@@ -50,6 +51,131 @@ export interface PipelineEvent {
   state?: string
   evidence?: Record<string, unknown>
   created_at: string
+}
+
+export interface ProviderRequestSummary {
+  provider: 'terac' | 'band' | 'pioneer' | string
+  purpose: string
+  state: string
+  external_id: string | null
+  correlation_id: string
+  created_at: string
+  completed_at: string | null
+}
+
+export interface AcquisitionBatch {
+  batch_id: string
+  sequence: number
+  terac_campaign_id: string | null
+  created_at: string
+  submitted: number
+  accepted: number
+}
+
+export interface CaptureSummary {
+  capture_id: string
+  state: string
+  object_id: string
+  viewpoint_bin: string
+  submitted_at: string
+}
+
+export interface WorkflowSummary {
+  status: string
+  current_step: string
+  render_root_run_id: string | null
+  last_error_code: string | null
+  last_error_message: string | null
+  updated_at: string
+}
+
+export interface GPUJobSummary {
+  job_id: string
+  stage: string
+  attempt: number
+  status: string
+  pipeline_version: string
+  provider_job_id: string | null
+  gpu_seconds: number | null
+  metrics: Record<string, unknown>
+  error_code: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+export interface QCRunSummary {
+  qc_run_id: string
+  subject_type: string
+  stage: string
+  passed: boolean
+  reason_codes: string[]
+  metrics: Record<string, unknown>
+  thresholds: Record<string, unknown>
+  simulation: boolean
+  created_at: string
+}
+
+export interface DecisionSummary {
+  decision_id: string
+  decision_type: string
+  reason_codes: string[]
+  confidence: number | null
+  policy_version: string
+  requires_human_approval: boolean
+  approved_by: string | null
+  created_at: string
+}
+
+export interface EpisodeSummary {
+  episode_id: string
+  kind: 'source' | 'generated'
+  source_id: string | null
+  lineage_group_id: string
+  batch_qc_passed: boolean | null
+  delivered: boolean
+  created_at: string
+}
+
+export interface DeliverySummary {
+  delivery_id: string
+  dataset_version: string
+  rights_profile: string
+  schema_version: string | null
+  episode_count: number | null
+  artifact_count: number
+  created_at: string
+}
+
+export interface OrderWorkspace {
+  acquisition: {
+    batches: AcquisitionBatch[]
+    captures: CaptureSummary[]
+    provider_requests: ProviderRequestSummary[]
+  }
+  processing: {
+    workflow: WorkflowSummary | null
+    jobs: GPUJobSummary[]
+  }
+  quality: {
+    runs: QCRunSummary[]
+    decisions: DecisionSummary[]
+    provider_requests: ProviderRequestSummary[]
+  }
+  episodes: EpisodeSummary[]
+  delivery: DeliverySummary | null
+  billing: {
+    payment_status: 'paid' | 'awaiting_payment'
+    payment_reference: string | null
+  }
+}
+
+export interface DeliveryResponse {
+  delivery_id: string
+  order_id: string
+  dataset_version: string
+  download_url: string
+  manifest_url: string
+  expires_in_seconds: number
 }
 
 export interface CreateOrderPayload {

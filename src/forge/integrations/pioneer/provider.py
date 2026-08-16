@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Protocol
-import os
 
 
 @dataclass(frozen=True)
@@ -21,7 +20,11 @@ class PioneerFeatures:
     feature_version: str = "forge-qc-features-v1"
 
     def __post_init__(self) -> None:
-        for field_name in ("reconstruction_valid_ratio", "contact_observability", "occlusion_ratio"):
+        for field_name in (
+            "reconstruction_valid_ratio",
+            "contact_observability",
+            "occlusion_ratio",
+        ):
             value = float(getattr(self, field_name))
             if not 0 <= value <= 1:
                 raise ValueError(f"{field_name} must be in [0, 1]")
@@ -127,20 +130,3 @@ class FixturePioneerProvider:
             threshold_version="fixture-threshold-v1",
             simulation=True,
         )
-
-
-class ProductionPioneerProvider:
-    """Fail-closed boundary until the authenticated Pioneer API adapter is configured."""
-
-    def __init__(self, api_key: str | None = None, project_id: str | None = None) -> None:
-        self.api_key = api_key or os.getenv("PIONEER_API_KEY")
-        self.project_id = project_id or os.getenv("PIONEER_PROJECT_ID")
-
-    def infer(
-        self, features: PioneerFeatures, inference_stage: str, environment: str
-    ) -> PioneerVerdict:
-        if environment != "production":
-            raise RuntimeError("PRODUCTION_PIONEER_PROVIDER_REQUIRES_PRODUCTION_ENV")
-        if not self.api_key or not self.project_id:
-            raise RuntimeError("PIONEER_NOT_CONFIGURED")
-        raise RuntimeError("PIONEER_API_ADAPTER_PENDING_ACCOUNT_SCHEMA_CONFIRMATION")

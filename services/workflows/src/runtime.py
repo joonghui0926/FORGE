@@ -16,7 +16,10 @@ from psycopg.rows import dict_row
 
 from forge.modules.collection.planner import CollectionPlanner, CustomerTaskRequest
 from forge.contracts.models import ArtifactRef, GPUJobRequest
+from forge.integrations.band import BandDecisionClient
+from forge.integrations.pioneer import PioneerInferenceClient
 from forge.integrations.r2.store import R2ObjectStore
+from forge.integrations.terac import TeracCampaignClient
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -258,48 +261,21 @@ class WorkflowRuntime:
             )
 
     def request_band(self, order_id: str, purpose: str, payload: dict[str, Any]) -> str:
-        api_key = require_env("BAND_API_KEY")
-        room_id = require_env("BAND_ROOM_ID")
-        if purpose == "collection_plan":
-            peer_id = require_env("BAND_COLLECTION_AGENT_ID")
-            peer_name = os.getenv("BAND_COLLECTION_AGENT_NAME", "Collection Architect")
-            peer_handle = require_env("BAND_COLLECTION_AGENT_HANDLE")
-        else:
-            peer_id = require_env("BAND_QUALITY_AGENT_ID")
-            peer_name = os.getenv("BAND_QUALITY_AGENT_NAME", "Quality Council")
-            peer_handle = require_env("BAND_QUALITY_AGENT_HANDLE")
+        client = BandDecisionClient.from_env(self.http_timeout)
         request_id, correlation_id, should_send = self.create_provider_request(
             order_id, "band", purpose, payload
         )
         if not should_send:
             return correlation_id
-        content = (
-            f"@{peer_handle.lstrip('@')} FORGE {purpose} decision required. "
-            f"Return only signed decision JSON containing correlation_id={correlation_id}.\n"
-            f"{canonical_json(payload)}"
+        dispatch = client.request_decision(purpose, correlation_id, payload)
+        self.complete_provider_request(
+            request_id, dispatch.external_id, dispatch.response, state="SENT"
         )
-        response = httpx.post(
-            f"https://app.band.ai/api/v1/agent/chats/{room_id}/messages",
-            headers={"X-API-Key": api_key, "Content-Type": "application/json"},
-            json={
-                "message": {
-                    "content": content,
-                    "mentions": [{"id": peer_id, "name": peer_name, "handle": peer_handle}],
-                }
-            },
-            timeout=self.http_timeout,
-        )
-        response.raise_for_status()
-        body = response.json()
-        external_id = str(body.get("id") or body.get("message", {}).get("id") or "") or None
-        self.complete_provider_request(request_id, external_id, body, state="SENT")
         return correlation_id
 
     def request_pioneer(
         self, order_id: str, purpose: str, features: dict[str, Any]
     ) -> dict[str, Any]:
-        api_key = require_env("PIONEER_API_KEY")
-        model_id = os.getenv("PIONEER_MODEL_ID", "Qwen/Qwen3-8B")
         request_id, correlation_id, should_send = self.create_provider_request(
             order_id, "pioneer", purpose, features
         )
@@ -311,70 +287,23 @@ class WorkflowRuntime:
             if row and row["response_payload"]:
                 return dict(row["response_payload"])
             raise RuntimeError("PIONEER_REQUEST_ALREADY_PENDING")
-        prompt = (
-            "You are FORGE's conservative robot-dataset quality classifier. "
-            "Never override deterministic failures. Return JSON only with keys "
-            "source_usable_probability, physics_pass_probability, recommended_action, "
-            "reason_codes, next_capture_instruction. Input features: " + canonical_json(features)
+        result = PioneerInferenceClient.from_env(self.http_timeout).infer(
+            purpose, correlation_id, features
         )
-        response = httpx.post(
-            "https://api.pioneer.ai/v1/chat/completions",
-            headers={"X-API-Key": api_key, "Content-Type": "application/json"},
-            json={
-                "model": model_id,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0,
-                "response_format": {"type": "json_object"},
-            },
-            timeout=self.http_timeout,
-        )
-        response.raise_for_status()
-        raw = response.json()
-        content = raw["choices"][0]["message"]["content"]
-        verdict = json.loads(content)
-        verdict.update(
-            {
-                "schema_version": "forge.pioneer-verdict.v1",
-                "verdict_id": f"pio_{correlation_id}",
-                "subject_id": str(features["subject_id"]),
-                "inference_stage": "PRE_HEAVY" if purpose == "pre_qc" else "POST_REPLAY",
-                "provider": "pioneer",
-                "model_id": model_id,
-                "model_version": str(raw.get("model", model_id)),
-                "evaluation_id": str(raw.get("id", correlation_id)),
-                "threshold_version": "forge-quality-thresholds-v1",
-                "simulation": False,
-            }
-        )
-        self.complete_provider_request(request_id, str(raw.get("id", "")) or None, verdict)
-        return verdict
+        self.complete_provider_request(request_id, result.external_id, result.verdict)
+        return result.verdict
 
     def create_terac_campaign(
         self, order_id: str, collection_plan: dict[str, Any]
     ) -> dict[str, Any]:
-        bridge_url = require_env("TERAC_MCP_BRIDGE_URL")
-        token = require_env("TERAC_MCP_BRIDGE_TOKEN")
+        client = TeracCampaignClient.from_env(self.http_timeout)
         request_id, correlation_id, should_send = self.create_provider_request(
             order_id, "terac", "create_campaign", collection_plan
         )
         if not should_send:
             return {"correlation_id": correlation_id, "deduplicated": True}
-        response = httpx.post(
-            bridge_url,
-            headers={"Authorization": f"Bearer {token}", "Idempotency-Key": correlation_id},
-            json={
-                "action": "create_campaign",
-                "correlation_id": correlation_id,
-                "plan": collection_plan,
-            },
-            timeout=self.http_timeout,
-        )
-        response.raise_for_status()
-        body = response.json()
-        campaign_id = str(body.get("campaign_id", ""))
-        if not campaign_id:
-            raise RuntimeError("TERAC_CAMPAIGN_ID_MISSING")
-        self.complete_provider_request(request_id, campaign_id, body)
+        result = client.create_campaign(correlation_id, collection_plan)
+        self.complete_provider_request(request_id, result.campaign_id, result.response)
         with self.connection() as connection, connection.transaction():
             sequence = connection.execute(
                 "SELECT COALESCE(MAX(sequence), 0) + 1 AS next FROM capture_batches WHERE order_id = %s",
@@ -385,9 +314,9 @@ class WorkflowRuntime:
                 INSERT INTO capture_batches (id, order_id, sequence, terac_campaign_id)
                 VALUES (%s, %s, %s, %s)
                 """,
-                (new_id("bat_"), order_id, sequence, campaign_id),
+                (new_id("bat_"), order_id, sequence, result.campaign_id),
             )
-        return body
+        return result.response
 
     def submit_runpod(self, order_id: str, capture_id: str) -> dict[str, Any]:
         api_key = require_env("RUNPOD_API_KEY")

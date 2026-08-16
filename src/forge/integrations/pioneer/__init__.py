@@ -1,13 +1,14 @@
+from forge.integrations.pioneer.client import PioneerCallResult, PioneerInferenceClient
 from forge.integrations.pioneer.provider import (
     FixturePioneerProvider,
     PioneerFeatures,
     PioneerVerdict,
-    ProductionPioneerProvider,
 )
 
 __all__ = [
     "FixturePioneerProvider",
+    "PioneerCallResult",
     "PioneerFeatures",
+    "PioneerInferenceClient",
     "PioneerVerdict",
-    "ProductionPioneerProvider",
 ]

@@ -944,7 +944,13 @@ QUALITY_INSUFFICIENT         no infra retry; route to decision engine
 LICENSE_BLOCKED              terminal until approved
 ```
 
-## 11. Band, Pioneer, Render, Terac의 실제 의존 관계
+## 11. Terac, Band, Pioneer, Render의 실제 의존 관계
+
+Terac은 FORGE의 첫 번째 외부 실행 계층이다. 고객 task contract와 Band가 검증한
+수집 계획을 실제 작업자 모집, 촬영 campaign, submission으로 전환한다. 전문성이
+필요한 task에는 qualified expert를, 반복 수집에는 general worker를 배치하고,
+모든 원천 데이터는 consent와 derivative rights evidence를 함께 반환해야 한다.
+Terac이 없으면 FORGE compiler에 공급할 목적형 신규 physical evidence를 확장할 수 없다.
 
 Band는 다음 agent role을 가진다.
 
@@ -979,7 +985,7 @@ Render Workflow는 실제 effect를 수행한다.
 - Band decision 요청과 결과 적용
 - delivery packaging
 
-Terac adapter는 실제 API/MCP가 제공하는 범위만 구현한다. 다음이 아직 불명확하면 `integrations/terac/ASSUMPTIONS.md`에 기록하고 mock contract로 control plane을 개발한다.
+Terac adapter는 실제 API/MCP가 제공하는 범위만 구현한다. 다음이 아직 불명확하면 `docs/integrations/terac.md`에 기록하고 mock contract로 control plane을 개발한다.
 
 - 외부 upload URL 또는 submission event 제공 여부
 - worker consent와 derivative rights 전달 방식

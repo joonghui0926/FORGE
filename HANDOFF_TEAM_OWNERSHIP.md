@@ -59,7 +59,7 @@ Order → Capture → GPU Job → Reconstruction → Skill IR
 | `apps/web/**` | Inseon | Joonghui | customer, capture, operator, delivery UI |
 | `services/api/**` | Inseon | Joonghui | auth, order, artifact metadata, signed URL, webhook |
 | `services/workflows/**` | Inseon | Joonghui | Render Workflows DAG와 activity |
-| `integrations/**` | Inseon | Joonghui | Terac, Band, Pioneer, R2, Stripe, Linq; RunPod client 포함 |
+| `src/forge/integrations/**` | Inseon | Joonghui | Terac, Band, Pioneer, Render, R2, RunPod의 좁은 provider boundary |
 | `infra/render/**` | Inseon | Joonghui | web/API/workflow/Postgres deployment |
 | `packages/ui/**` | Inseon | Joonghui | 디자인 token, primitive, accessibility |
 | `packages/db/**` | Inseon | Joonghui | schema/migration/repository |

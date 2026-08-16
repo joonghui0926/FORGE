@@ -5,11 +5,11 @@ import os
 import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from forge.integrations.render import start_workflow_task
 
 from ..auth import require_tenant, require_worker_callback_token
 from ..db import get_conn
 from ..models import GPUResultPayload, TenantContext
-from ..workflow_client import start_workflow_task
 
 
 router = APIRouter()

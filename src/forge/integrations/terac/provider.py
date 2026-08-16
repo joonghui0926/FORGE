@@ -19,12 +19,3 @@ class TeracAssignment:
 
 class TeracProvider(Protocol):
     def create_assignment(self, plan: CollectionPlan, environment: str) -> TeracAssignment: ...
-
-
-class ProductionTeracProvider:
-    """Fails closed until the sponsor confirms its authenticated write API schema."""
-
-    def create_assignment(self, plan: CollectionPlan, environment: str) -> TeracAssignment:
-        if environment != "production":
-            raise RuntimeError("TERAC_WRITE_REQUIRES_PRODUCTION_ENV")
-        raise RuntimeError("TERAC_API_ADAPTER_PENDING_SPONSOR_SCHEMA_AND_AUTHORIZATION")

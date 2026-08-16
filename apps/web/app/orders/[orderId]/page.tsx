@@ -4,7 +4,7 @@ import { apiServer } from '@/lib/api-server'
 import { Order } from '@/lib/types'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { WorkspaceTabs } from '@/components/orders/workspace/WorkspaceTabs'
-import { Button } from '@/components/ui/Button'
+import { DatasetDownloadButton } from '@/components/orders/workspace/DatasetDownloadButton'
 
 interface PageProps {
   params: { orderId: string }
@@ -20,7 +20,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     throw err
   }
 
-  const isReady = order.state === 'READY'
+  const deliveryId = order.state === 'READY' ? order.workspace?.delivery?.delivery_id ?? null : null
 
   return (
     <div>
@@ -31,9 +31,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </h1>
           <StatusBadge state={order.state} />
         </div>
-        <Button variant="secondary" disabled={!isReady} className="text-sm">
-          Download dataset
-        </Button>
+        <DatasetDownloadButton deliveryId={deliveryId} />
       </div>
       <WorkspaceTabs order={order} />
     </div>
