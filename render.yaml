@@ -43,14 +43,6 @@ services:
         sync: false
       - key: R2_ENDPOINT
         sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_PRICE_ID
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: RENDER_API_KEY
-        sync: false
       - key: RENDER_WORKFLOW_SLUG
         value: forge-control-plane
       - key: TERAC_WEBHOOK_SECRET
