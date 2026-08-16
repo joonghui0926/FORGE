@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
+from forge.integrations.stripe import build_order_payment_link
 from pydantic import BaseModel, Field
 import stripe
 from typing import Literal
@@ -14,6 +15,7 @@ router = APIRouter()
 
 _STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 _STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+_STRIPE_PAYMENT_LINK_URL = os.environ.get("STRIPE_PAYMENT_LINK_URL", "")
 _APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:3000")
 
 
@@ -370,14 +372,14 @@ def create_order(
                 ),
             )
     stripe_payment_link: str | None = None
-    if _STRIPE_KEY and _STRIPE_PRICE_ID:
+    if _STRIPE_PAYMENT_LINK_URL:
+        stripe_payment_link = build_order_payment_link(_STRIPE_PAYMENT_LINK_URL, order_id)
+    elif _STRIPE_KEY and _STRIPE_PRICE_ID:
         stripe.api_key = _STRIPE_KEY
         try:
             session = stripe.checkout.Session.create(
                 mode="payment",
-                line_items=[
-                    {"price": _STRIPE_PRICE_ID, "quantity": body.volume_validated_episodes}
-                ],
+                line_items=[{"price": _STRIPE_PRICE_ID, "quantity": 1}],
                 metadata={"order_id": order_id, "tenant_id": ctx.tenant_id},
                 success_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=success",
                 cancel_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=cancelled",

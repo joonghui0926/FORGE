@@ -7,6 +7,11 @@ import secrets
 
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from forge.integrations.render import WorkflowDispatchError, start_workflow_task
+from forge.integrations.stripe import (
+    StripeCheckoutContractError,
+    order_id_from_checkout_session,
+    validate_checkout_session,
+)
 import stripe
 
 from ..db import get_conn
@@ -62,9 +67,26 @@ async def stripe_webhook(
 
     if event["type"] in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
         session = event["data"]["object"]
-        order_id = str(session.get("metadata", {}).get("order_id", ""))
-        if not order_id.startswith("ord_"):
-            raise HTTPException(status_code=422, detail="Stripe order_id metadata missing")
+        if (
+            event["type"] == "checkout.session.completed"
+            and session.get("payment_status") != "paid"
+        ):
+            _mark_event_processed("stripe", event_id)
+            return {"received": True, "payment_pending": True}
+        try:
+            order_id = order_id_from_checkout_session(session)
+            validate_checkout_session(
+                session,
+                expected_payment_link_id=os.getenv("STRIPE_PAYMENT_LINK_ID") or None,
+                expected_amount_cents=(
+                    int(os.environ["STRIPE_EXPECTED_AMOUNT_CENTS"])
+                    if os.getenv("STRIPE_EXPECTED_AMOUNT_CENTS")
+                    else None
+                ),
+                expected_currency=os.getenv("STRIPE_EXPECTED_CURRENCY", "usd"),
+            )
+        except (StripeCheckoutContractError, ValueError) as error:
+            raise HTTPException(status_code=422, detail=str(error))
         with get_conn() as connection, connection.transaction():
             row = connection.execute(
                 "SELECT state::text FROM dataset_orders WHERE id = %s FOR UPDATE", (order_id,)

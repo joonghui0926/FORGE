@@ -51,6 +51,16 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
         </div>
       </dl>
 
+      <div className="flex items-end justify-between gap-6 border-t border-forge-border/70 pt-5">
+        <div>
+          <p className="text-sm font-medium text-forge-ink-muted">One-time dataset pilot</p>
+          <p className="mt-1 text-sm leading-6 text-forge-ink-muted">
+            Robot-ready data delivery. Robot hardware is not included.
+          </p>
+        </div>
+        <p className="shrink-0 text-3xl font-semibold tracking-[-0.04em] text-forge-ink">$350</p>
+      </div>
+
       {error && (
         <p className="text-sm text-forge-danger bg-forge-danger-soft rounded-control px-4 py-3">
           {error}
@@ -60,7 +70,7 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
       <div className="flex justify-between pt-2">
         <Button variant="secondary" onClick={onBack} disabled={submitting}>Back</Button>
         <Button variant="primary" onClick={onSubmit} loading={submitting}>
-          Place order
+          Continue to secure payment
         </Button>
       </div>
     </div>

@@ -21,7 +21,9 @@ export function Hero() {
               Define your robot task
             </Button>
           </Link>
-          <span className="text-[15px] font-medium text-forge-ink-muted">Quality-gated at every stage</span>
+          <span className="text-[15px] font-medium text-forge-ink-muted">
+            $350 pilot dataset · Quality-gated at every stage
+          </span>
         </div>
       </div>
 
