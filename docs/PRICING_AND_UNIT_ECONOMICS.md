@@ -14,12 +14,16 @@ Recommended launch prices:
 
 | Offer | Price | Included |
 | --- | ---: | --- |
+| Self-serve starter pilot | **$350 one-time** | one narrowly defined skill/embodiment, 1-10 validated episodes, standard QC evidence and one robot-ready data export; card checkout |
 | Paid feasibility | $2,500-$5,000 | task/robot contract, capture plan, 3-5 source trials, reconstruction and replay risk report; credit toward a pilot |
 | Single-skill pilot | **$15,000-$25,000** | one skill, one target embodiment, 20-50 accepted sources, 250-1,000 replay-validated episodes, lineage and one export |
 | Production capability | $35,000-$75,000 | one skill/embodiment, 2,000-10,000 validated episodes, larger coverage matrix, failure/recovery set and acceptance report |
 | Enterprise program | from $150,000/year | multiple skills/embodiments, reserved throughput, private deployment and negotiated SLA |
 
-The minimum quote is `max($15,000, fully_loaded_COGS / (1 - target_margin))`. Use a 67%
+The $350 starter is a deliberately bounded acquisition offer, not the price of a custom
+production dataset. Reject or re-quote requests that exceed its episode, skill, embodiment,
+rights, or support scope. The minimum custom quote is
+`max($15,000, fully_loaded_COGS / (1 - target_margin))`. Use a 67%
 target gross margin until real Terac, expert, rejection, GPU and customer-support data exist.
 A pilot with $5,000 fully loaded COGS therefore needs at least $15,151.52, rounded upward
 in a proposal. Card processing, taxes and sales commission sit inside fully loaded COGS.

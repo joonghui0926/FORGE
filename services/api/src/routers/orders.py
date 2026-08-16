@@ -67,7 +67,7 @@ class CoverageSpec(BaseModel):
 class CreateOrderRequest(BaseModel):
     skill: SkillSpec
     embodiment: EmbodimentSpec
-    volume_validated_episodes: int
+    volume_validated_episodes: int = Field(ge=1, le=10)
     coverage: CoverageSpec
     quality: QualitySpec
     rights_profile: Literal["customer_exclusive_derivatives", "forge_retained", "open"]

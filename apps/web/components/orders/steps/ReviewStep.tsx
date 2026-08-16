@@ -53,7 +53,7 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
 
       <div className="flex items-end justify-between gap-6 border-t border-forge-border/70 pt-5">
         <div>
-          <p className="text-sm font-medium text-forge-ink-muted">One-time dataset pilot</p>
+          <p className="text-sm font-medium text-forge-ink-muted">One-time dataset pilot · 1-10 episodes</p>
           <p className="mt-1 text-sm leading-6 text-forge-ink-muted">
             Robot-ready data delivery. Robot hardware is not included.
           </p>
