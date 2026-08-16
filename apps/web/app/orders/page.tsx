@@ -1,15 +1,42 @@
 import Link from 'next/link'
-import { apiServer, ApiError } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { apiServer } from '@/lib/api-server'
 import { Order } from '@/lib/types'
 import { OrderRow } from '@/components/orders/OrderRow'
 import { Button } from '@/components/ui/Button'
 
-export default async function OrdersPage() {
+const VIEW_CONFIG = {
+  ready: {
+    title: 'Robot-ready data',
+    description: 'Validated datasets ready for review and delivery.',
+    states: ['READY'],
+  },
+  quality: {
+    title: 'Quality pipeline',
+    description: 'Orders currently being collected, compiled, or quality-checked.',
+    states: ['PAID', 'PLANNING', 'ACQUIRING', 'PRE_QC', 'PROCESSING', 'CONTACTING', 'RETARGETING', 'VALIDATING', 'RECOLLECTING', 'AMPLIFYING', 'BATCH_QC', 'REVIEW', 'BLOCKED', 'FAILED'],
+  },
+  packages: {
+    title: 'Delivery packages',
+    description: 'Immutable, validated packages prepared for customer delivery.',
+    states: ['PACKAGING', 'READY'],
+  },
+} as const
+
+type OrderView = keyof typeof VIEW_CONFIG
+
+export default async function OrdersPage({ searchParams }: { searchParams?: { view?: string } }) {
   let orders: Order[] = []
   let fetchError: string | null = null
+  const requestedView = searchParams?.view
+  const view = requestedView && requestedView in VIEW_CONFIG ? requestedView as OrderView : null
 
   try {
     orders = await apiServer.get<Order[]>('/orders')
+    if (view) {
+      const states = VIEW_CONFIG[view].states as readonly string[]
+      orders = orders.filter((order) => states.includes(order.state))
+    }
   } catch (err) {
     fetchError = err instanceof ApiError
       ? 'We could not connect to the server. Check your connection.'
@@ -20,9 +47,9 @@ export default async function OrdersPage() {
     <div>
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-forge-ink">Your Orders</h1>
-          <p className="text-forge-ink-muted mt-1 text-sm">
-            Track and manage your dataset orders.
+          <h1 className="text-2xl font-bold text-forge-ink">{view ? VIEW_CONFIG[view].title : 'Your Orders'}</h1>
+          <p className="text-forge-ink-muted mt-1 text-[15px]">
+            {view ? VIEW_CONFIG[view].description : 'Track and manage your dataset orders.'}
           </p>
         </div>
         {!fetchError && orders.length > 0 && (
@@ -41,9 +68,9 @@ export default async function OrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="py-20 text-center">
-          <h2 className="text-xl font-semibold text-forge-ink mb-2">No orders yet</h2>
+          <h2 className="text-xl font-semibold text-forge-ink mb-2">{view ? 'Nothing in this view yet' : 'No orders yet'}</h2>
           <p className="text-forge-ink-muted mb-8 text-sm max-w-sm mx-auto">
-            Place your first order to start collecting robot demonstration data.
+            {view ? 'Orders will appear here automatically as the production workflow advances.' : 'Place your first order to start collecting robot demonstration data.'}
           </p>
           <Link href="/orders/new">
             <Button variant="primary">Place your first order</Button>

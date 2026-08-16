@@ -2,7 +2,7 @@ export const ORDER_STATES = [
   'DRAFT', 'PAID', 'PLANNING', 'ACQUIRING', 'PRE_QC',
   'PROCESSING', 'CONTACTING', 'RETARGETING', 'VALIDATING',
   'RECOLLECTING', 'AMPLIFYING', 'BATCH_QC', 'PACKAGING',
-  'READY', 'CANCELLED', 'FAILED',
+  'READY', 'REVIEW', 'BLOCKED', 'CANCELLED', 'FAILED',
 ] as const
 
 export type OrderState = typeof ORDER_STATES[number]
@@ -27,6 +27,8 @@ export const STATUS_LABELS: Record<OrderState, StatusEntry> = {
   BATCH_QC:    { label: 'Processing', detail: 'Batch quality check' },
   PACKAGING:   { label: 'Processing', detail: 'Packaging dataset' },
   READY:       { label: 'Ready for review' },
+  REVIEW:      { label: 'Needs review', detail: 'Operator decision required' },
+  BLOCKED:     { label: 'Blocked', detail: 'Closed with evidence' },
   CANCELLED:   { label: 'Cancelled' },
   FAILED:      { label: 'Needs attention' },
 }
@@ -39,11 +41,21 @@ export interface Order {
   created_at?: string
   volume_validated_episodes?: number
   contract?: Record<string, unknown>
+  pipeline?: PipelineEvent[]
+}
+
+export interface PipelineEvent {
+  step: string
+  actor: string
+  state?: string
+  evidence?: Record<string, unknown>
+  created_at: string
 }
 
 export interface CreateOrderPayload {
   skill: {
     name: string
+    motion_family: MotionFamily
     initial_state: string
     success_predicate: string
     failure_predicates: string[]
@@ -80,6 +92,7 @@ export interface CreateOrderResponse {
 export interface OrderFormData {
   skill: {
     name: string
+    motion_family: MotionFamily
     initial_state: string
     success_predicate: string
     failure_predicates: string[]
@@ -108,7 +121,7 @@ export interface OrderFormData {
 }
 
 export const INITIAL_ORDER_FORM_DATA: OrderFormData = {
-  skill: { name: '', initial_state: '', success_predicate: '', failure_predicates: [], phases: [] },
+  skill: { name: '', motion_family: 'whole_body', initial_state: '', success_predicate: '', failure_predicates: [], phases: [] },
   embodiment: { robot_id: '', model_uri: '', model_sha256: '', hand_type: 'parallel_gripper', joint_limits_uri: '' },
   coverage: { object_ids: [], viewpoint_bins: [], grasp_variation: 'preferred' },
   volume_validated_episodes: 10,
@@ -120,3 +133,7 @@ export const INITIAL_ORDER_FORM_DATA: OrderFormData = {
   },
   rights_profile: 'customer_exclusive_derivatives',
 }
+
+export type MotionFamily =
+  | 'manipulation' | 'bimanual' | 'tool_use' | 'locomotion' | 'whole_body'
+  | 'mobile_manipulation' | 'navigation' | 'articulated_machine' | 'aerial' | 'multi_robot'

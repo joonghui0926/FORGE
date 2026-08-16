@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { apiServer, ApiError } from '@/lib/api'
+import { ApiError } from '@/lib/api'
+import { apiServer } from '@/lib/api-server'
 import { Order } from '@/lib/types'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { WorkspaceTabs } from '@/components/orders/workspace/WorkspaceTabs'

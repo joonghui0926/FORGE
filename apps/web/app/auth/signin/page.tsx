@@ -18,12 +18,23 @@ const ERROR_TEXT: Record<string, string> = {
 
 export default function SignInPage({ searchParams }: PageProps) {
   const [loading, setLoading] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
   const callbackUrl = searchParams.callbackUrl ?? '/orders'
   const errorMsg = searchParams.error ? (ERROR_TEXT[searchParams.error] ?? ERROR_TEXT.Default) : null
 
-  async function handleProvider(provider: 'google' | 'github') {
+  async function handleGoogle() {
+    const provider = 'google'
     setLoading(provider)
     await signIn(provider, { callbackUrl })
+  }
+
+  async function handleEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLoading('resend')
+    const result = await signIn('resend', { email, callbackUrl, redirect: false })
+    setLoading(null)
+    if (!result?.error) setEmailSent(true)
   }
 
   return (
@@ -39,14 +50,42 @@ export default function SignInPage({ searchParams }: PageProps) {
         )}
 
         <div className="flex flex-col gap-3">
-          <Button variant="secondary" onClick={() => handleProvider('google')}
+          <Button variant="secondary" onClick={handleGoogle}
                   loading={loading === 'google'} className="w-full justify-center">
             Continue with Google
           </Button>
-          <Button variant="secondary" onClick={() => handleProvider('github')}
-                  loading={loading === 'github'} className="w-full justify-center">
-            Continue with GitHub
-          </Button>
+
+          <div className="flex items-center gap-3 py-2 text-sm text-forge-ink-subtle" aria-hidden="true">
+            <span className="h-px flex-1 bg-forge-border" />
+            or
+            <span className="h-px flex-1 bg-forge-border" />
+          </div>
+
+          {emailSent ? (
+            <p className="rounded-control bg-forge-primary-soft px-4 py-3 text-sm text-forge-ink">
+              Check your email for a secure sign-in link.
+            </p>
+          ) : (
+            <form className="flex flex-col gap-3" onSubmit={handleEmail}>
+              <label className="text-sm font-medium text-forge-ink" htmlFor="email">
+                Work email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@company.com"
+                className="min-h-11 rounded-control border border-forge-border bg-white px-3 text-base text-forge-ink outline-none transition focus:border-forge-primary focus:ring-2 focus:ring-forge-focus"
+              />
+              <Button type="submit" loading={loading === 'resend'} className="w-full justify-center">
+                Email me a sign-in link
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>

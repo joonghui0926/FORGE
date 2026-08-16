@@ -11,10 +11,14 @@
     "tenant_id": { "type": "string", "pattern": "^ten_" },
     "skill": {
       "type": "object",
-      "required": ["name", "initial_state", "success_predicate", "failure_predicates", "phases"],
+      "required": ["name", "motion_family", "initial_state", "success_predicate", "failure_predicates", "phases"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
+        "motion_family": {
+          "type": "string",
+          "enum": ["manipulation", "bimanual", "tool_use", "locomotion", "whole_body", "mobile_manipulation", "navigation", "articulated_machine", "aerial", "multi_robot"]
+        },
         "initial_state": { "type": "string" },
         "success_predicate": { "type": "string" },
         "failure_predicates": { "type": "array", "items": { "type": "string" }, "minItems": 1 },

@@ -24,6 +24,7 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
         <div>
           <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Task</dt>
           <dd className="text-forge-ink font-medium">{data.skill.name}</dd>
+          <dd className="text-forge-ink-muted mt-0.5">{data.skill.motion_family.replace(/_/g, ' ')}</dd>
           <dd className="text-forge-ink-muted mt-0.5">{data.skill.initial_state} &rarr; {data.skill.success_predicate}</dd>
         </div>
         <div>

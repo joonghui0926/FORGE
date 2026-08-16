@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timezone
 
 from botocore.exceptions import ClientError
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
@@ -27,11 +27,11 @@ def _new_id(prefix: str) -> str:
 class PresignedUploadRequest(BaseModel):
     order_id: str
     batch_id: str
-    object_id: str       # manipulated object e.g. "bottle_a"
+    object_id: str  # manipulated object e.g. "bottle_a"
     viewpoint_bin: str
     mime_type: str
     size_bytes: int
-    sha256: str          # client-computed before requesting the URL
+    sha256: str  # client-computed before requesting the URL
 
 
 class PresignedUploadResponse(BaseModel):
@@ -159,8 +159,7 @@ def complete_capture(
                    schema_version, producer)
                 VALUES (%s, %s, %s, 'raw_video', %s, %s, %s, 'forge.capture.v1', 'browser_upload')
                 """,
-                (artifact_id, ctx.tenant_id, tok["order_id"],
-                 r2_key, body.sha256, actual_size),
+                (artifact_id, ctx.tenant_id, tok["order_id"], r2_key, body.sha256, actual_size),
             )
             conn.execute(
                 """
@@ -172,10 +171,17 @@ def complete_capture(
                         %s, %s, %s, %s, %s, %s, %s, NOW())
                 """,
                 (
-                    capture_id, tok["order_id"], tok["batch_id"],
-                    body.worker_subject_id, r2_key, body.sha256,
-                    tok["mime_type"], tok["object_id"], tok["viewpoint_bin"],
-                    consent_r2_key, body.declared_rights,
+                    capture_id,
+                    tok["order_id"],
+                    tok["batch_id"],
+                    body.worker_subject_id,
+                    r2_key,
+                    body.sha256,
+                    tok["mime_type"],
+                    tok["object_id"],
+                    tok["viewpoint_bin"],
+                    consent_r2_key,
+                    body.declared_rights,
                 ),
             )
             conn.execute(
@@ -187,12 +193,14 @@ def complete_capture(
                 (
                     capture_id,
                     ctx.user_id,
-                    json.dumps({
-                        "sha256": body.sha256,
-                        "r2_key": r2_key,
-                        "size_bytes": actual_size,
-                        "declared_rights": body.declared_rights,
-                    }),
+                    json.dumps(
+                        {
+                            "sha256": body.sha256,
+                            "r2_key": r2_key,
+                            "size_bytes": actual_size,
+                            "declared_rights": body.declared_rights,
+                        }
+                    ),
                 ),
             )
 

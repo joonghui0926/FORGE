@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import tarfile
+from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -10,6 +12,7 @@ from forge.integrations.r2.store import InMemoryObjectStore
 from forge.integrations.runpod.handler import ProcessorOutput, RunPodHandler
 from forge.modules.packaging.delivery import DeliveryBuilder, DeliveryEpisode, DeliveryRequest
 from tests.helpers import SHA, accepted_quality
+from workers.processors import DeliveryPackageProcessor
 
 
 class MissingObjectError(Exception):
@@ -34,6 +37,56 @@ class EchoProcessor:
 
 
 class StorageRunPodPackagingTest(unittest.TestCase):
+    def test_runpod_package_stage_emits_archive_and_manifest(self) -> None:
+        store = InMemoryObjectStore()
+        source = store.put_bytes(
+            "r2://forge-dev/results/trajectory.npz",
+            b"trajectory",
+            "application/octet-stream",
+        )
+        config = {
+            "schema_version": "forge.package-job.v1",
+            "order_id": "ord_1",
+            "tenant_id": "ten_1",
+            "dataset_version": "v1",
+            "rights_profile": "customer_exclusive_derivatives",
+            "quality_decision": {"route": "ACCEPT"},
+            "artifacts": [
+                {
+                    "input_kind": "artifact_00000",
+                    "kind": "robot_trajectory",
+                    "filename": "trajectory.npz",
+                    "uri": source.uri,
+                    "sha256": source.sha256,
+                }
+            ],
+        }
+        config_object = store.put_bytes(
+            "r2://forge-dev/config/package.json",
+            json.dumps(config).encode(),
+            "application/json",
+        )
+        request = GPUJobRequest(
+            job_id="job_package",
+            idempotency_key=SHA,
+            stage="package",
+            input_artifacts=(ArtifactRef("artifact_00000", source.uri, source.sha256),),
+            config_uri=config_object.uri,
+            container_image="ghcr.io/forge/worker@sha256:" + SHA,
+            pipeline_version="v1",
+            output_prefix="r2://forge-dev/delivery/ord_1",
+        )
+        result = RunPodHandler(
+            store, {"package": DeliveryPackageProcessor()}, "development"
+        ).handle(request)
+        self.assertEqual(result.status, "succeeded")
+        archive_ref = next(item for item in result.artifacts if item.kind == "delivery_package")
+        with tarfile.open(
+            fileobj=BytesIO(store.get_bytes(archive_ref.uri)), mode="r:gz"
+        ) as archive:
+            self.assertIn("manifest.json", archive.getnames())
+            self.assertIn("artifacts/trajectory.npz", archive.getnames())
+
     def test_r2_missing_object_is_mapped_to_file_not_found(self) -> None:
         from forge.integrations.r2.store import R2ObjectStore
 
@@ -43,7 +96,9 @@ class StorageRunPodPackagingTest(unittest.TestCase):
 
     def test_runpod_handler_verifies_checksum_and_is_idempotent(self) -> None:
         store = InMemoryObjectStore()
-        source = store.put_bytes("r2://forge-dev/input/source.bin", b"source", "application/octet-stream")
+        source = store.put_bytes(
+            "r2://forge-dev/input/source.bin", b"source", "application/octet-stream"
+        )
         store.put_bytes("r2://forge-dev/config/job.json", b"config", "application/json")
         request = GPUJobRequest(
             job_id="job_1",
@@ -58,9 +113,7 @@ class StorageRunPodPackagingTest(unittest.TestCase):
         processor = EchoProcessor()
         handler = RunPodHandler(store, {"reconstruction": processor}, "development")
         first = handler.handle(request)
-        second = RunPodHandler(
-            store, {"reconstruction": processor}, "development"
-        ).handle(request)
+        second = RunPodHandler(store, {"reconstruction": processor}, "development").handle(request)
         self.assertEqual(first, second)
         self.assertEqual(processor.calls, 1)
         self.assertEqual(first.status, "succeeded")

@@ -3,7 +3,7 @@ import os
 import secrets
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 
 from ..auth import require_tenant
@@ -16,12 +16,25 @@ _STRIPE_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 _STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
 _APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:3000")
 
+
 def _new_id(prefix: str) -> str:
     return f"{prefix}{secrets.token_urlsafe(12)}"
 
 
 class SkillSpec(BaseModel):
     name: str
+    motion_family: Literal[
+        "manipulation",
+        "bimanual",
+        "tool_use",
+        "locomotion",
+        "whole_body",
+        "mobile_manipulation",
+        "navigation",
+        "articulated_machine",
+        "aerial",
+        "multi_robot",
+    ]
     initial_state: str
     success_predicate: str
     failure_predicates: list[str]
@@ -30,7 +43,7 @@ class SkillSpec(BaseModel):
 
 class EmbodimentSpec(BaseModel):
     robot_id: str
-    model_uri: str        # r2://...
+    model_uri: str  # r2://...
     model_sha256: str
     hand_type: Literal["dexterous", "parallel_gripper", "suction"]
     joint_limits_uri: str
@@ -66,6 +79,7 @@ class OrderResponse(BaseModel):
     created_at: str | None = None
     volume_validated_episodes: int | None = None
     contract: dict | None = None
+    pipeline: list[dict] = Field(default_factory=list)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=OrderResponse)
@@ -89,6 +103,14 @@ def create_order(
         with conn.transaction():
             conn.execute(
                 """
+                INSERT INTO tenants (id, slug, name)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+                """,
+                (ctx.tenant_id, ctx.tenant_id, ctx.user_id),
+            )
+            conn.execute(
+                """
                 INSERT INTO dataset_orders
                   (id, tenant_id, state, skill_name, contract)
                 VALUES (%s, %s, 'DRAFT', %s, %s::jsonb)
@@ -101,7 +123,11 @@ def create_order(
                   (entity_type, entity_id, action, actor, after_val)
                 VALUES ('dataset_order', %s, 'created', %s, %s::jsonb)
                 """,
-                (order_id, ctx.user_id, json.dumps({"state": "DRAFT", "skill_name": body.skill.name})),
+                (
+                    order_id,
+                    ctx.user_id,
+                    json.dumps({"state": "DRAFT", "skill_name": body.skill.name}),
+                ),
             )
     stripe_payment_link: str | None = None
     if _STRIPE_KEY and _STRIPE_PRICE_ID:
@@ -109,7 +135,9 @@ def create_order(
         try:
             session = stripe.checkout.Session.create(
                 mode="payment",
-                line_items=[{"price": _STRIPE_PRICE_ID, "quantity": body.volume_validated_episodes}],
+                line_items=[
+                    {"price": _STRIPE_PRICE_ID, "quantity": body.volume_validated_episodes}
+                ],
                 metadata={"order_id": order_id, "tenant_id": ctx.tenant_id},
                 success_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=success",
                 cancel_url=f"{_APP_BASE_URL}/orders/{order_id}?payment=cancelled",
@@ -121,6 +149,9 @@ def create_order(
         order_id=order_id,
         state="DRAFT",
         stripe_payment_link=stripe_payment_link,
+        skill_name=body.skill.name,
+        volume_validated_episodes=body.volume_validated_episodes,
+        contract=contract,
     )
 
 
@@ -136,6 +167,15 @@ def get_order(order_id: str, ctx: TenantContext = Depends(require_tenant)) -> Or
             """,
             (order_id, ctx.tenant_id),
         ).fetchone()
+        pipeline_rows = conn.execute(
+            """
+            SELECT action, actor, after_val, evidence, created_at
+            FROM audit_events
+            WHERE entity_type = 'dataset_order' AND entity_id = %s
+            ORDER BY created_at ASC, id ASC
+            """,
+            (order_id,),
+        ).fetchall()
     if row is None:
         raise HTTPException(status_code=404, detail="Order not found")
     return OrderResponse(
@@ -146,6 +186,16 @@ def get_order(order_id: str, ctx: TenantContext = Depends(require_tenant)) -> Or
         contract=row[4],
         volume_validated_episodes=row[5],
         stripe_payment_link=None,
+        pipeline=[
+            {
+                "step": event[0],
+                "actor": event[1],
+                "state": (event[2] or {}).get("state"),
+                "evidence": event[3] or {},
+                "created_at": event[4].isoformat(),
+            }
+            for event in pipeline_rows
+        ],
     )
 
 

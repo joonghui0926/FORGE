@@ -3,6 +3,7 @@ from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import hashlib
 import json
 import os
 import tarfile
@@ -284,3 +285,71 @@ class PaperPipelineProcessor:
             for output in execution.expected_outputs:
                 archive.add(output, arcname=output.name, recursive=True)
         return buffer.getvalue()
+
+
+class DeliveryPackageProcessor:
+    """Packages only the immutable, already quality-approved R2 artifacts in the job."""
+
+    def process(
+        self, inputs: dict[str, bytes], config: bytes, request: GPUJobRequest
+    ) -> tuple[ProcessorOutput, ...]:
+        document = json.loads(config.decode("utf-8"))
+        if document.get("schema_version") != "forge.package-job.v1":
+            raise ValueError("PACKAGE_CONFIG_SCHEMA_INVALID")
+        declared = list(document.get("artifacts", []))
+        if not declared or len(declared) != len(inputs):
+            raise ValueError("PACKAGE_ARTIFACT_SET_INCOMPLETE")
+
+        files: list[dict[str, object]] = []
+        archive_buffer = BytesIO()
+        with tarfile.open(fileobj=archive_buffer, mode="w:gz") as archive:
+            for item in declared:
+                input_kind = str(item["input_kind"])
+                data = inputs[input_kind]
+                digest = hashlib.sha256(data).hexdigest()
+                if digest != str(item["sha256"]):
+                    raise ValueError("PACKAGE_ARTIFACT_CHECKSUM_MISMATCH")
+                filename = str(item["filename"])
+                target = f"artifacts/{filename}"
+                info = tarfile.TarInfo(target)
+                info.size = len(data)
+                info.mtime = 0
+                archive.addfile(info, BytesIO(data))
+                files.append(
+                    {
+                        "kind": item["kind"],
+                        "path": target,
+                        "sha256": digest,
+                        "size_bytes": len(data),
+                        "source_uri": item["uri"],
+                    }
+                )
+
+            manifest = {
+                "schema_version": "forge.delivery.v1",
+                "order_id": document["order_id"],
+                "tenant_id": document["tenant_id"],
+                "dataset_version": document["dataset_version"],
+                "rights_profile": document["rights_profile"],
+                "quality_decision": document["quality_decision"],
+                "artifacts": files,
+            }
+            manifest_data = (canonical_json(manifest) + "\n").encode("utf-8")
+            manifest_info = tarfile.TarInfo("manifest.json")
+            manifest_info.size = len(manifest_data)
+            manifest_info.mtime = 0
+            archive.addfile(manifest_info, BytesIO(manifest_data))
+
+        return (
+            ProcessorOutput(
+                kind="delivery_package",
+                filename="forge-delivery.tar.gz",
+                data=archive_buffer.getvalue(),
+                media_type="application/gzip",
+            ),
+            ProcessorOutput(
+                kind="delivery_manifest",
+                filename="manifest.json",
+                data=manifest_data,
+            ),
+        )

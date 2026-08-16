@@ -1,31 +1,98 @@
+databases:
+  - name: forge-postgres
+    databaseName: forge
+    user: forge
+    region: oregon
+    plan: basic-256mb
+    diskSizeGB: 1
+
 services:
   - type: web
-    name: forge-web
+    name: forge-api-joonghui
+    runtime: python
+    region: oregon
+    plan: starter
+    branch: agent/forge-handoffs
+    buildCommand: pip install -r services/api/requirements.txt && pip install -e .
+    startCommand: uvicorn services.api.src.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forge-postgres
+          property: connectionString
+      - key: FORGE_ENV
+        value: production
+      - key: FORGE_AUTO_MIGRATE
+        value: "true"
+      - key: APP_BASE_URL
+        value: https://forge-web-joonghui.onrender.com
+      - key: API_BASE_URL
+        value: https://forge-api-joonghui.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://forge-web-joonghui.onrender.com
+      - key: AUTH_SECRET
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false
+      - key: RENDER_WORKFLOW_SLUG
+        value: forge-control-plane
+      - key: TERAC_WEBHOOK_SECRET
+        sync: false
+      - key: BAND_DECISION_WEBHOOK_SECRET
+        sync: false
+      - key: FORGE_CALLBACK_TOKEN
+        sync: false
+
+  - type: web
+    name: forge-web-joonghui
     runtime: node
     region: oregon
-    plan: free
+    plan: starter
     branch: agent/forge-handoffs
-    buildCommand: NODE_ENV=development pnpm install && pnpm --filter @forge/web build
-    startCommand: pnpm --filter @forge/web start
+    buildCommand: corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm --filter @forge/web build
+    startCommand: corepack pnpm --filter @forge/web start
+    healthCheckPath: /
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: FORGE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22.20.0"
       - key: AUTH_SECRET
         sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forge-postgres
+          property: connectionString
       - key: AUTH_GOOGLE_ID
         sync: false
       - key: AUTH_GOOGLE_SECRET
         sync: false
-      - key: AUTH_GITHUB_ID
-        sync: false
-      - key: AUTH_GITHUB_SECRET
-        sync: false
       - key: AUTH_RESEND_KEY
         sync: false
+      - key: AUTH_EMAIL_FROM
+        value: FORGE <onboarding@resend.dev>
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://forge-api-joonghui.onrender.com
       - key: APP_BASE_URL
-        sync: false
-      - key: DATABASE_URL
-        sync: false
+        value: https://forge-web-joonghui.onrender.com

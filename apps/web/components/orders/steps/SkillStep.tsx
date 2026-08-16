@@ -31,6 +31,31 @@ export function SkillStep({ data, onChange, onNext }: SkillStepProps) {
         value={data.name} onChange={(e) => set('name', e.target.value)}
         placeholder="e.g. Pick and place apple"
       />
+      <div className="flex flex-col gap-1">
+        <label htmlFor="motion-family" className="text-sm font-medium text-forge-ink">
+          Motion family
+        </label>
+        <select
+          id="motion-family"
+          value={data.motion_family}
+          onChange={(event) => set('motion_family', event.target.value as SkillData['motion_family'])}
+          className="min-h-[48px] px-4 text-base rounded-control border border-forge-border bg-forge-surface text-forge-ink focus:outline-none focus:ring-2 focus:ring-forge-focus"
+        >
+          <option value="whole_body">Whole-body motion</option>
+          <option value="manipulation">Manipulation</option>
+          <option value="bimanual">Bimanual manipulation</option>
+          <option value="tool_use">Tool use</option>
+          <option value="locomotion">Locomotion</option>
+          <option value="mobile_manipulation">Mobile manipulation</option>
+          <option value="navigation">Navigation</option>
+          <option value="articulated_machine">Articulated machine</option>
+          <option value="aerial">Aerial robot</option>
+          <option value="multi_robot">Multi-robot coordination</option>
+        </select>
+        <p className="text-sm text-forge-ink-muted">
+          FORGE selects the matching capture protocol, retargeter, and physics profile.
+        </p>
+      </div>
       <Field
         id="initial-state" label="Initial state" required
         value={data.initial_state} onChange={(e) => set('initial_state', e.target.value)}

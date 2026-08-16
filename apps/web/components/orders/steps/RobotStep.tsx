@@ -24,7 +24,7 @@ export function RobotStep({ data, onChange, onNext, onBack }: RobotStepProps) {
     onChange({ ...data, [key]: value })
   }
 
-  const canProceed = data.robot_id.trim() && data.model_uri.trim() && data.model_sha256.trim()
+  const canProceed = data.robot_id.trim() && data.model_uri.trim() && data.model_sha256.trim() && data.joint_limits_uri.trim()
 
   return (
     <div className="flex flex-col gap-5">
@@ -64,8 +64,8 @@ export function RobotStep({ data, onChange, onNext, onBack }: RobotStepProps) {
         placeholder="abc123..."
       />
       <Field
-        id="joint-limits-uri" label="Joint limits URI"
-        help="r2:// URI to joint limits YAML. Leave blank to use model defaults."
+        id="joint-limits-uri" label="Joint limits URI" required
+        help="Immutable r2:// URI to the target robot's joint-limit configuration."
         value={data.joint_limits_uri} onChange={(e) => set('joint_limits_uri', e.target.value)}
         placeholder="r2://forge-dev/robots/franka-limits.yaml"
       />

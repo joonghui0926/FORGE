@@ -1,17 +1,19 @@
 import { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
-import { NavBar } from '@/components/layout/NavBar'
+import { AppSidebar } from '@/components/layout/AppSidebar'
 
 export default async function OrdersLayout({ children }: { children: ReactNode }) {
   const session = await auth()
   if (!session) redirect('/auth/signin')
 
   return (
-    <div className="min-h-screen bg-forge-canvas">
-      <NavBar authenticated />
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {children}
+    <div className="flex h-screen overflow-hidden bg-forge-canvas">
+      <AppSidebar />
+      <main className="min-w-0 flex-1 overflow-y-auto pt-16 lg:pt-0">
+        <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+          {children}
+        </div>
       </main>
     </div>
   )

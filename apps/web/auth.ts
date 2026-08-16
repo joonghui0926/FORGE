@@ -1,26 +1,21 @@
 import NextAuth from 'next-auth'
-import Google from 'next-auth/providers/google'
-import GitHub from 'next-auth/providers/github'
+import PostgresAdapter from '@auth/pg-adapter'
 import { SignJWT } from 'jose'
+import authConfig from '@/auth.config'
+import { authPool } from '@/lib/auth-db'
 
 const jwtSecret = new TextEncoder().encode(process.env.AUTH_SECRET!)
 
+async function tenantIdFor(subject: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(subject.toLowerCase()))
+  const bytes = Array.from(new Uint8Array(digest).slice(0, 12))
+  const token = bytes.map((value) => value.toString(16).padStart(2, '0')).join('')
+  return `ten_${token}`
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-    }),
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID!,
-      clientSecret: process.env.AUTH_GITHUB_SECRET!,
-    }),
-  ],
-  session: { strategy: 'jwt' },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
+  ...authConfig,
+  adapter: PostgresAdapter(authPool),
   callbacks: {
     async signIn({ user }) {
       return !!user.email
@@ -32,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (token.forgeTokenExp as number) - now < 300)
       if (isFirstSignIn || needsRefresh) {
         const sub      = user?.email ?? (token.sub as string)
-        const tenantId = user?.email ?? (token.tenantId as string)
+        const tenantId = (token.tenantId as string | undefined) ?? await tenantIdFor(sub)
         const forgeToken = await new SignJWT({ sub, tenant_id: tenantId })
           .setProtectedHeader({ alg: 'HS256' })
           .setExpirationTime('1h')

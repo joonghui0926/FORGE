@@ -1,7 +1,4 @@
-// apiServer methods import auth() at call time — they only work in Next.js server context.
 // apiFetch works everywhere (pass token from /api/token route in client components).
-
-import type { Session } from 'next-auth'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -27,24 +24,6 @@ async function request<T>(path: string, token: string, init?: RequestInit): Prom
     throw new ApiError(res.status, (body as { detail?: string }).detail ?? 'Request failed')
   }
   return res.json() as Promise<T>
-}
-
-export const apiServer = {
-  async get<T>(path: string): Promise<T> {
-    const { auth } = await import('@/auth')
-    const session = await auth() as Session & { forgeToken?: string }
-    if (!session?.forgeToken) throw new ApiError(401, 'Not authenticated')
-    return request<T>(path, session.forgeToken)
-  },
-  async post<T>(path: string, body: unknown): Promise<T> {
-    const { auth } = await import('@/auth')
-    const session = await auth() as Session & { forgeToken?: string }
-    if (!session?.forgeToken) throw new ApiError(401, 'Not authenticated')
-    return request<T>(path, session.forgeToken, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-  },
 }
 
 export async function apiFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {

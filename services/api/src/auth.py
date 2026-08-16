@@ -1,6 +1,7 @@
+import hmac
 import os
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Header, HTTPException, status
 from jose import JWTError, jwt
 
 from .models import TenantContext
@@ -32,8 +33,8 @@ async def require_tenant(authorization: str = Header(...)) -> TenantContext:
 async def require_worker_callback_token(
     x_forge_callback_token: str = Header(...),
 ) -> None:
-    # TODO: verify HMAC token bound to job_id
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Callback auth not implemented",
-    )
+    expected = os.getenv("FORGE_CALLBACK_TOKEN", "")
+    if not expected or not hmac.compare_digest(expected, x_forge_callback_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid callback token"
+        )

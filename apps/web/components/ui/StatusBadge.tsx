@@ -6,6 +6,8 @@ const LABEL_ICON: Record<string, string> = {
   'Collecting demonstrations': '●',
   'Processing':                '⟳',
   'Ready for review':          '✓',
+  'Needs review':              '!',
+  'Blocked':                   '!',
   'Cancelled':                 '✕',
   'Needs attention':           '!',
 }
@@ -16,6 +18,8 @@ const LABEL_COLOR: Record<string, string> = {
   'Collecting demonstrations': 'text-forge-info bg-forge-info-soft',
   'Processing':                'text-forge-info bg-forge-info-soft',
   'Ready for review':          'text-forge-success bg-forge-success-soft',
+  'Needs review':              'text-forge-warning bg-forge-warning-soft',
+  'Blocked':                   'text-forge-danger bg-forge-danger-soft',
   'Cancelled':                 'text-forge-ink-muted bg-forge-surface-soft',
   'Needs attention':           'text-forge-danger bg-forge-danger-soft',
 }

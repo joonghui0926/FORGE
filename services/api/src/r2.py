@@ -2,7 +2,6 @@ import os
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import ClientError
 
 BUCKET = os.environ["R2_BUCKET_NAME"]
 ENDPOINT = os.environ["R2_ENDPOINT"]
@@ -10,7 +9,7 @@ ACCESS_KEY = os.environ["R2_ACCESS_KEY_ID"]
 SECRET_KEY = os.environ["R2_SECRET_ACCESS_KEY"]
 
 MAX_VIDEO_BYTES = 500 * 1024 * 1024  # 500 MB
-UPLOAD_EXPIRY_SECONDS = 900           # 15 minutes — matches capture_token TTL
+UPLOAD_EXPIRY_SECONDS = 900  # 15 minutes — matches capture_token TTL
 ALLOWED_MIME = {"video/mp4"}
 
 

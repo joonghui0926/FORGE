@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { Order } from '@/lib/types'
 import { OverviewTab } from './OverviewTab'
 import { PlaceholderTab } from './PlaceholderTab'
+import { PipelineTab } from './PipelineTab'
 
 const TABS = [
   { id: 'overview',    label: 'Overview' },
   { id: 'acquisition', label: 'Acquisition' },
-  { id: 'processing',  label: 'Processing' },
+  { id: 'processing',  label: 'Pipeline' },
   { id: 'quality',     label: 'Quality' },
   { id: 'episodes',    label: 'Episodes' },
   { id: 'dataset',     label: 'Dataset' },
@@ -60,6 +61,8 @@ export function WorkspaceTabs({ order }: WorkspaceTabsProps) {
       <div className="pt-8" id={`tabpanel-${active}`} role="tabpanel">
         {active === 'overview' ? (
           <OverviewTab order={order} />
+        ) : active === 'processing' ? (
+          <PipelineTab order={order} />
         ) : (
           <PlaceholderTab
             name={TABS.find((t) => t.id === active)!.label}
