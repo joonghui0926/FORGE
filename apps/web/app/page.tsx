@@ -8,8 +8,8 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col bg-[linear-gradient(135deg,#F8F5EB_0%,#F8F5EB_58%,#EDF7F6_100%)]">
       <header className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-6 py-5 lg:px-12 xl:px-20">
         <Link href="/" className="flex items-center gap-3" aria-label="FORGE home">
-          <Image src="/brand/forge-logo.png" alt="" width={44} height={44} priority className="size-11 object-contain" />
-          <span className="text-xl font-extrabold tracking-[-0.045em] text-forge-ink">FORGE</span>
+          <Image src="/brand/forge-favicon.png" alt="" width={56} height={56} priority className="size-14 object-contain" />
+          <span className="text-[22px] font-extrabold tracking-[-0.045em] text-forge-ink">FORGE</span>
         </Link>
         <Link href="/auth/signin" className="text-[15px] font-medium text-forge-ink-muted transition-colors hover:text-forge-ink">
           Sign in

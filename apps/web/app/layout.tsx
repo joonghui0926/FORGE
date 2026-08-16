@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   title: 'FORGE',
   description: 'Human demonstrations in. Validated robot-ready datasets out.',
   icons: {
-    icon: '/brand/forge-logo.png',
-    shortcut: '/brand/forge-logo.png',
-    apple: '/brand/forge-logo.png',
+    icon: '/brand/forge-favicon.png',
+    shortcut: '/brand/forge-favicon.png',
+    apple: '/brand/forge-favicon.png',
   },
 }
 
