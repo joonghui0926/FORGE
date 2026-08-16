@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth'
 import PostgresAdapter from '@auth/pg-adapter'
+import Google from 'next-auth/providers/google'
+import Resend from 'next-auth/providers/resend'
 import { SignJWT } from 'jose'
 import authConfig from '@/auth.config'
 import { authPool } from '@/lib/auth-db'
@@ -16,6 +18,16 @@ async function tenantIdFor(subject: string): Promise<string> {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PostgresAdapter(authPool),
+  providers: [
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+    }),
+    Resend({
+      apiKey: process.env.AUTH_RESEND_KEY!,
+      from: process.env.AUTH_EMAIL_FROM ?? 'FORGE <onboarding@resend.dev>',
+    }),
+  ],
   callbacks: {
     async signIn({ user }) {
       return !!user.email

@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@keyframes forge-robot-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-0.35deg); }
+  50% { transform: translate3d(8px, -12px, 0) rotate(0.45deg); }
+}
+
+@keyframes forge-trail {
+  0%, 100% { opacity: 0.22; transform: translate3d(0, 0, 0) scale(0.8); }
+  50% { opacity: 0.78; transform: translate3d(-10px, 8px, 0) scale(1.15); }
+}
+
 @theme {
   /* Canvas & primary */
   --color-forge-canvas:         #F8F5EB;

@@ -38,7 +38,7 @@ export default function SignInPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-forge-surface flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#F1F7F5] flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-forge-ink mb-1">Sign in to FORGE</h1>
         <p className="text-forge-ink-muted mb-8 text-sm">Order and track your robot datasets.</p>

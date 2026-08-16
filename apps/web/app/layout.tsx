@@ -7,6 +7,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 export const metadata: Metadata = {
   title: 'FORGE',
   description: 'Human demonstrations in. Validated robot-ready datasets out.',
+  icons: {
+    icon: '/brand/forge-logo.png',
+    shortcut: '/brand/forge-logo.png',
+    apple: '/brand/forge-logo.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

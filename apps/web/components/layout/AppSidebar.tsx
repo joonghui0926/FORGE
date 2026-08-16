@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -38,9 +39,13 @@ const NAV_GROUPS = [
 
 function ForgeMark() {
   return (
-    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-forge-primary text-base font-black text-white">
-      F
-    </span>
+    <Image
+      src="/brand/forge-logo.png"
+      alt=""
+      width={40}
+      height={40}
+      className="size-10 shrink-0 object-contain"
+    />
   )
 }
 
