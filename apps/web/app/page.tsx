@@ -11,9 +11,14 @@ export default function LandingPage() {
           <Image src="/brand/forge-favicon.png" alt="" width={56} height={56} priority className="size-14 object-contain" />
           <span className="text-[22px] font-extrabold tracking-[-0.045em] text-forge-ink">FORGE</span>
         </Link>
-        <Link href="/auth/signin" className="text-[15px] font-medium text-forge-ink-muted transition-colors hover:text-forge-ink">
-          Sign in
-        </Link>
+        <nav className="flex items-center gap-6 text-[15px] font-medium" aria-label="Public navigation">
+          <Link href="/pricing" className="text-forge-primary-active transition-colors hover:text-forge-ink">
+            $350 Pilot
+          </Link>
+          <Link href="/auth/signin" className="text-forge-ink-muted transition-colors hover:text-forge-ink">
+            Sign in
+          </Link>
+        </nav>
       </header>
       <main className="flex-1">
         <Hero />
@@ -21,6 +26,7 @@ export default function LandingPage() {
       </main>
       <footer className="mx-auto w-full max-w-[1440px] px-6 py-8 lg:px-12 xl:px-20">
         <div className="flex gap-6 text-[15px] text-forge-ink-muted">
+          <Link href="/pricing" className="hover:text-forge-ink transition-colors">$350 Pilot</Link>
           <Link href="/auth/signin" className="hover:text-forge-ink transition-colors">Sign in</Link>
           <a href="mailto:hello@forge.app" className="hover:text-forge-ink transition-colors">Contact</a>
         </div>

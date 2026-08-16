@@ -16,9 +16,9 @@ export function Hero() {
           Tell us the skill. FORGE plans collection, compiles physical trajectories, validates quality, and delivers a robot-ready dataset your team can train on.
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-5">
-          <Link href="/auth/signin?callbackUrl=/orders/new">
+          <Link href="/pricing">
             <Button variant="primary" className="px-8 text-base">
-              Define your robot task
+              Start the $350 pilot
             </Button>
           </Link>
           <span className="text-[15px] font-medium text-forge-ink-muted">

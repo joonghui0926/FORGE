@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 import {
   CircleHelp,
   ClipboardList,
+  CreditCard,
   Database,
   LogOut,
   Menu,
@@ -24,7 +25,8 @@ const NAV_GROUPS = [
     label: 'Workspace',
     items: [
       { href: '/orders', label: 'Orders', icon: ClipboardList, view: undefined },
-      { href: '/orders/new', label: 'New order', icon: Plus, view: undefined },
+      { href: '/orders/new', label: 'Start $350 pilot', icon: Plus, view: undefined },
+      { href: '/pricing', label: 'Pilot pricing', icon: CreditCard, view: undefined },
     ],
   },
   {
