@@ -3,6 +3,9 @@ import Google from 'next-auth/providers/google'
 import Resend from 'next-auth/providers/resend'
 
 export default {
+  // Render terminates TLS at its proxy and forwards the public Host header.
+  // Cloudflare will do the same once the custom domain is attached.
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
@@ -19,4 +22,3 @@ export default {
     error: '/auth/error',
   },
 } satisfies NextAuthConfig
-
