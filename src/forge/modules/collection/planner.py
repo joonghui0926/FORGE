@@ -79,6 +79,14 @@ class CustomerTaskRequest:
     regulated: bool = False
     specialized_equipment: bool = False
     requested_accepted_demonstrations: int = 20
+    participant_count: int = 3
+    clips_per_participant: int = 6
+    minimum_unique_environments: int = 2
+    participant_expertise: str = "general_contributor"
+    capture_mode: str = "mixed_views"
+    success_takes_per_participant: int = 4
+    failure_takes_per_participant: int = 1
+    recovery_takes_per_participant: int = 1
 
     def __post_init__(self) -> None:
         if not self.request_id.startswith("req_"):
@@ -91,6 +99,36 @@ class CustomerTaskRequest:
             raise ValueError("target_control_rate_hz must be positive")
         if self.requested_accepted_demonstrations < 1:
             raise ValueError("requested demonstrations must be positive")
+        if self.participant_count < 2:
+            raise ValueError("production collection requires at least two participants")
+        if self.clips_per_participant < 2:
+            raise ValueError("each participant must record at least two clips")
+        if self.minimum_unique_environments < 1:
+            raise ValueError("minimum_unique_environments must be positive")
+        if self.minimum_unique_environments > self.participant_count:
+            raise ValueError("unique environments cannot exceed participants")
+        if self.participant_expertise not in {
+            "general_contributor",
+            "experienced_practitioner",
+            "verified_domain_expert",
+        }:
+            raise ValueError("unsupported participant expertise")
+        if self.capture_mode not in {
+            "egocentric",
+            "third_person",
+            "mixed_views",
+            "synchronized_multiview",
+        }:
+            raise ValueError("unsupported capture mode")
+        take_count = (
+            self.success_takes_per_participant
+            + self.failure_takes_per_participant
+            + self.recovery_takes_per_participant
+        )
+        if take_count != self.clips_per_participant:
+            raise ValueError(
+                "success, failure, and recovery takes must equal clips_per_participant"
+            )
         if not self.required_success_conditions or not self.prohibited_failures:
             raise ValueError("success and prohibited-failure criteria are required")
 
@@ -122,6 +160,12 @@ class CollectionPlan:
     motion_family: str
     validation_profile: str
     target_accepted_demonstrations: int
+    target_source_clips: int
+    target_participant_count: int
+    clips_per_participant: int
+    minimum_unique_environments: int
+    capture_mode: str
+    per_participant_take_mix: dict[str, int]
     initial_assignment_count: int
     reserve_assignment_count: int
     capture_requirements: tuple[CaptureRequirement, ...]
@@ -157,9 +201,12 @@ class CollectionPlanner:
         if request.motion_family in {"aerial", "articulated_machine"}:
             expert_reasons.append("LICENSE_OR_PLATFORM_COMPETENCE_REQUIRED")
 
+        required_expertise = (
+            "verified_domain_expert" if expert_reasons else request.participant_expertise
+        )
         worker = WorkerRequirement(
-            expertise="verified_domain_expert" if expert_reasons else "general_contributor",
-            minimum_workers=2 if request.hazardous else 1,
+            expertise=required_expertise,
+            minimum_workers=request.participant_count,
             reason_codes=tuple(expert_reasons) or ("NO_SPECIALIST_CONSTRAINT_IDENTIFIED",),
             requires_site_authorization=request.regulated or request.specialized_equipment,
             requires_safety_briefing=request.hazardous or request.specialized_equipment,
@@ -180,9 +227,10 @@ class CollectionPlanner:
             for index, view in enumerate(views, start=1)
         )
 
-        # Capture more than the accepted target; payment/acceptance is still per verified take.
-        reserve = max(2, (request.requested_accepted_demonstrations + 4) // 5)
-        initial = request.requested_accepted_demonstrations + reserve
+        # One assignment is one participant session containing multiple immutable source clips.
+        # Reserve participants protect demographic/environment diversity when a full session fails.
+        reserve = max(1, (request.participant_count + 4) // 5)
+        initial = request.participant_count + reserve
         plan_seed = {
             "request_id": request.request_id,
             "version": self.version,
@@ -195,6 +243,16 @@ class CollectionPlanner:
             motion_family=request.motion_family,
             validation_profile=str(profile["validation_profile"]),
             target_accepted_demonstrations=request.requested_accepted_demonstrations,
+            target_source_clips=request.participant_count * request.clips_per_participant,
+            target_participant_count=request.participant_count,
+            clips_per_participant=request.clips_per_participant,
+            minimum_unique_environments=request.minimum_unique_environments,
+            capture_mode=request.capture_mode,
+            per_participant_take_mix={
+                "success": request.success_takes_per_participant,
+                "failure": request.failure_takes_per_participant,
+                "recovery": request.recovery_takes_per_participant,
+            },
             initial_assignment_count=initial,
             reserve_assignment_count=reserve,
             capture_requirements=capture,
@@ -203,7 +261,9 @@ class CollectionPlanner:
                 "Record calibration reference and environment before motion.",
                 "Record a neutral start state, one continuous execution, and a neutral end state.",
                 "Do not cut, zoom, apply stabilization, or alter frame rate.",
-                "Repeat failures as separate takes; never replace or edit the failed source.",
+                "Upload the declared number of success, failure, and recovery takes separately.",
+                "A recovery take must begin from a declared failed or perturbed state.",
+                "Never replace or edit a failed source; its relationship to recovery is metadata.",
                 "Upload original media plus device metadata and signed rights receipt.",
             ),
             rejection_codes=(

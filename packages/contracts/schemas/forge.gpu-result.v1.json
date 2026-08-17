@@ -8,7 +8,7 @@
   "properties": {
     "schema_version": { "type": "string", "const": "forge.gpu-result.v1" },
     "job_id": { "type": "string", "pattern": "^job_" },
-    "status": { "type": "string", "enum": ["succeeded", "failed", "quality_insufficient"] },
+    "status": { "type": "string", "enum": ["succeeded", "failed", "retryable", "quality_insufficient"] },
     "artifacts": {
       "type": "array",
       "items": {
@@ -18,7 +18,8 @@
         "properties": {
           "kind": { "type": "string" },
           "uri": { "type": "string", "pattern": "^r2://" },
-          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "media_type": { "type": "string" }
         }
       }
     },
@@ -33,6 +34,7 @@
     },
     "warnings": { "type": "array", "items": { "type": "string" } },
     "model_versions_uri": { "type": ["string", "null"], "pattern": "^r2://" },
+    "simulation": { "type": "boolean" },
     "error": {
       "oneOf": [
         { "type": "null" },

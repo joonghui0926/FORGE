@@ -73,9 +73,9 @@ class GPUJobRequest:
 @dataclass(frozen=True)
 class GPUJobResult:
     job_id: str
-    status: Literal["succeeded", "failed", "retryable"]
+    status: Literal["succeeded", "failed", "retryable", "quality_insufficient"]
     artifacts: tuple[ArtifactRef, ...] = ()
-    metrics: dict[str, float | int] = field(default_factory=dict)
+    metrics: dict[str, float | int | bool | str] = field(default_factory=dict)
     warnings: tuple[str, ...] = ()
     error_code: str | None = None
     error_message: str | None = None
@@ -85,7 +85,7 @@ class GPUJobResult:
     def __post_init__(self) -> None:
         if self.status == "succeeded" and self.error_code:
             raise ValueError("successful result cannot include an error code")
-        if self.status != "succeeded" and not self.error_code:
+        if self.status in {"failed", "retryable"} and not self.error_code:
             raise ValueError("failed/retryable result requires an error code")
         gpu_seconds = float(self.metrics.get("gpu_seconds", 0))
         if self.status == "succeeded" and not self.simulation and gpu_seconds <= 0:

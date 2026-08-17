@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: 'FORGE',
-  description: 'Human demonstrations in. Validated robot-ready datasets out.',
+  description: 'Multi-person demonstrations in. Auditable robotics training datasets out.',
   icons: {
     icon: '/brand/forge-favicon.png',
     shortcut: '/brand/forge-favicon.png',

@@ -24,7 +24,7 @@ const LABELS: Record<string, string> = {
   deterministic_validation: 'Physics and contract validation',
   request_pioneer_final_verdict: 'Pioneer final verdict',
   request_band_quality_decision: 'Band quality council',
-  package_dataset: 'Robot-ready package',
+  package_dataset: 'Dataset package',
 }
 
 export function PipelineTab({ order }: { order: Order }) {

@@ -9,7 +9,7 @@ describe('NewOrderStepper', () => {
   it('renders step 1 (Skill) initially', () => {
     render(<NewOrderStepper token="tok_test" />)
     expect(screen.getByText('What should the robot do?')).toBeInTheDocument()
-    expect(screen.getByText(/step 1 of 6/i)).toBeInTheDocument()
+    expect(screen.getByText(/step 1 of 8/i)).toBeInTheDocument()
   })
 
   it('does not advance from step 1 when task name is empty', async () => {
@@ -25,7 +25,7 @@ describe('NewOrderStepper', () => {
     await userEvent.type(screen.getByLabelText(/success/i), 'Apple in bin')
     await userEvent.click(screen.getByRole('button', { name: /next/i }))
     expect(screen.getByText('Which robot and hand?')).toBeInTheDocument()
-    expect(screen.getByText(/step 2 of 6/i)).toBeInTheDocument()
+    expect(screen.getByText(/step 2 of 8/i)).toBeInTheDocument()
   })
 
   it('goes back and preserves data', async () => {

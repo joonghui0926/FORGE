@@ -70,6 +70,8 @@ export interface AcquisitionBatch {
   created_at: string
   submitted: number
   accepted: number
+  target_participant_count?: number | null
+  target_source_clips?: number | null
 }
 
 export interface CaptureSummary {
@@ -78,6 +80,10 @@ export interface CaptureSummary {
   object_id: string
   viewpoint_bin: string
   submitted_at: string
+  participant_id?: string
+  environment_id?: string
+  take_kind?: 'success' | 'failure' | 'recovery'
+  take_index?: number
 }
 
 export interface WorkflowSummary {
@@ -151,6 +157,11 @@ export interface OrderWorkspace {
     batches: AcquisitionBatch[]
     captures: CaptureSummary[]
     provider_requests: ProviderRequestSummary[]
+    coverage?: {
+      unique_participants: number
+      unique_environments: number
+      take_counts: { success: number; failure: number; recovery: number }
+    }
   }
   processing: {
     workflow: WorkflowSummary | null
@@ -195,6 +206,8 @@ export interface CreateOrderPayload {
     joint_limits_uri: string
   }
   volume_validated_episodes: number
+  acquisition: AcquisitionConfig
+  output: OutputConfig
   coverage: {
     object_ids: string[]
     viewpoint_bins: string[]
@@ -237,6 +250,8 @@ export interface OrderFormData {
     grasp_variation: 'required' | 'preferred' | 'not_required'
   }
   volume_validated_episodes: number
+  acquisition: AcquisitionConfig
+  output: OutputConfig
   quality: {
     source_replay_pass_required: boolean
     max_penetration_m: number
@@ -251,6 +266,19 @@ export const INITIAL_ORDER_FORM_DATA: OrderFormData = {
   embodiment: { robot_id: '', model_uri: '', model_sha256: '', hand_type: 'parallel_gripper', joint_limits_uri: '' },
   coverage: { object_ids: [], viewpoint_bins: [], grasp_variation: 'preferred' },
   volume_validated_episodes: 10,
+  acquisition: {
+    participant_count: 3,
+    clips_per_participant: 6,
+    minimum_unique_environments: 2,
+    expertise: 'general_contributor',
+    capture_mode: 'mixed_views',
+    take_mix: { success: 4, failure: 1, recovery: 1 },
+  },
+  output: {
+    claim_level: 'human_video_training',
+    formats: ['forge_canonical'],
+    augmentation: 'training_recipe',
+  },
   quality: {
     source_replay_pass_required: true,
     max_penetration_m: 0.002,
@@ -263,3 +291,18 @@ export const INITIAL_ORDER_FORM_DATA: OrderFormData = {
 export type MotionFamily =
   | 'manipulation' | 'bimanual' | 'tool_use' | 'locomotion' | 'whole_body'
   | 'mobile_manipulation' | 'navigation' | 'articulated_machine' | 'aerial' | 'multi_robot'
+
+export interface AcquisitionConfig {
+  participant_count: number
+  clips_per_participant: number
+  minimum_unique_environments: number
+  expertise: 'general_contributor' | 'experienced_practitioner' | 'verified_domain_expert'
+  capture_mode: 'egocentric' | 'third_person' | 'mixed_views' | 'synchronized_multiview'
+  take_mix: { success: number; failure: number; recovery: number }
+}
+
+export interface OutputConfig {
+  claim_level: 'human_video_training' | 'sim_validated_robot_trajectory'
+  formats: Array<'forge_canonical' | 'lerobot_v3' | 'rlds' | 'robomimic'>
+  augmentation: 'none' | 'training_recipe' | 'validated_generated_episodes'
+}

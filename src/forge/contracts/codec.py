@@ -45,6 +45,9 @@ def gpu_job_request_from_dict(value: dict[str, Any]) -> GPUJobRequest:
 
 
 def gpu_result_to_dict(result: GPUJobResult) -> dict[str, Any]:
+    error = None
+    if result.error_code is not None:
+        error = {"code": result.error_code, "message": result.error_message or result.error_code}
     return {
         "schema_version": result.schema_version,
         "job_id": result.job_id,
@@ -60,8 +63,8 @@ def gpu_result_to_dict(result: GPUJobResult) -> dict[str, Any]:
         ],
         "metrics": result.metrics,
         "warnings": list(result.warnings),
-        "error_code": result.error_code,
-        "error_message": result.error_message,
+        "model_versions_uri": None,
+        "error": error,
         "simulation": result.simulation,
     }
 
@@ -74,6 +77,8 @@ def gpu_result_from_dict(value: dict[str, Any]) -> GPUJobResult:
         "artifacts",
         "metrics",
         "warnings",
+        "model_versions_uri",
+        "error",
         "error_code",
         "error_message",
         "simulation",
@@ -88,9 +93,19 @@ def gpu_result_from_dict(value: dict[str, Any]) -> GPUJobResult:
         artifacts=tuple(artifact_ref_from_dict(item) for item in value.get("artifacts", ())),
         metrics=dict(value.get("metrics", {})),
         warnings=tuple(str(item) for item in value.get("warnings", ())),
-        error_code=str(value["error_code"]) if value.get("error_code") is not None else None,
+        error_code=(
+            str(value["error"]["code"])
+            if isinstance(value.get("error"), dict)
+            else str(value["error_code"])
+            if value.get("error_code") is not None
+            else None
+        ),
         error_message=(
-            str(value["error_message"]) if value.get("error_message") is not None else None
+            str(value["error"]["message"])
+            if isinstance(value.get("error"), dict)
+            else str(value["error_message"])
+            if value.get("error_message") is not None
+            else None
         ),
         simulation=bool(value.get("simulation", False)),
     )

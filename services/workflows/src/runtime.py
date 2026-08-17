@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from collections import Counter, defaultdict
 from dataclasses import asdict
 from hashlib import sha256
 import json
@@ -186,6 +187,15 @@ class WorkflowRuntime:
         contract = order["contract"]
         skill = contract["skill"]
         robot = contract["embodiment"]
+        acquisition = contract.get("acquisition") or {
+            "participant_count": 3,
+            "clips_per_participant": 6,
+            "minimum_unique_environments": 2,
+            "expertise": "general_contributor",
+            "capture_mode": "mixed_views",
+            "take_mix": {"success": 4, "failure": 1, "recovery": 1},
+        }
+        take_mix = acquisition["take_mix"]
         request = CustomerTaskRequest(
             request_id=f"req_{order_id.removeprefix('ord_')}",
             tenant_id=order["tenant_id"],
@@ -205,8 +215,232 @@ class WorkflowRuntime:
             regulated=bool(contract.get("regulated", False)),
             specialized_equipment=bool(contract.get("specialized_equipment", False)),
             requested_accepted_demonstrations=int(contract["volume"]["validated_episodes"]),
+            participant_count=int(acquisition["participant_count"]),
+            clips_per_participant=int(acquisition["clips_per_participant"]),
+            minimum_unique_environments=int(acquisition["minimum_unique_environments"]),
+            participant_expertise=str(acquisition["expertise"]),
+            capture_mode=str(acquisition["capture_mode"]),
+            success_takes_per_participant=int(take_mix["success"]),
+            failure_takes_per_participant=int(take_mix["failure"]),
+            recovery_takes_per_participant=int(take_mix["recovery"]),
         )
         return CollectionPlanner().compile(request).to_dict()
+
+    def build_capture_features(
+        self,
+        order_id: str,
+        capture_ids: list[str],
+        provider_features: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build trusted collection evidence from FORGE records, not webhook claims."""
+        order = self.load_order(order_id)
+        contract = order["contract"]
+        acquisition = contract.get("acquisition") or {
+            "participant_count": 3,
+            "clips_per_participant": 6,
+            "minimum_unique_environments": 2,
+            "take_mix": {"success": 4, "failure": 1, "recovery": 1},
+        }
+        unique_capture_ids = list(dict.fromkeys(capture_ids))
+        with self.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, batch_id, worker_subject_id, environment_id, take_kind, take_index,
+                       viewpoint_bin, object_id, declared_rights, state::text
+                FROM demonstrations
+                WHERE order_id = %s AND id = ANY(%s)
+                ORDER BY id
+                """,
+                (order_id, unique_capture_ids),
+            ).fetchall()
+
+        worker_takes: dict[str, Counter[str]] = defaultdict(Counter)
+        worker_environments: dict[str, set[str]] = defaultdict(set)
+        viewpoints: set[str] = set()
+        object_ids: set[str] = set()
+        missing_rights: list[str] = []
+        batch_ids: set[str] = set()
+        for row in rows:
+            batch_ids.add(str(row["batch_id"]))
+            worker = str(row["worker_subject_id"])
+            take_kind = str(row["take_kind"] or "")
+            if take_kind:
+                worker_takes[worker][take_kind] += 1
+            if row["environment_id"]:
+                worker_environments[worker].add(str(row["environment_id"]))
+            viewpoints.add(str(row["viewpoint_bin"]))
+            object_ids.add(str(row["object_id"]))
+            if not row["declared_rights"]:
+                missing_rights.append(str(row["id"]))
+
+        required_mix = {key: int(value) for key, value in acquisition["take_mix"].items()}
+        clips_per_participant = int(acquisition["clips_per_participant"])
+        qualified_workers = [
+            worker
+            for worker, mix in worker_takes.items()
+            if sum(mix.values()) >= clips_per_participant
+            and all(mix[kind] >= required for kind, required in required_mix.items())
+        ]
+        qualified_environments = {
+            environment
+            for worker in qualified_workers
+            for environment in worker_environments[worker]
+        }
+        participant_count = int(acquisition["participant_count"])
+        minimum_environments = int(acquisition["minimum_unique_environments"])
+        required_viewpoints = set(contract["coverage"]["viewpoint_bins"])
+        required_objects = set(contract["coverage"]["object_ids"])
+
+        hard_failures = list((provider_features or {}).get("deterministic_hard_failures", []))
+        if len(rows) != len(unique_capture_ids):
+            hard_failures.append("CAPTURE_NOT_FOUND_OR_WRONG_ORDER")
+        if len(batch_ids) != 1:
+            hard_failures.append("CAPTURES_MUST_BELONG_TO_ONE_BATCH")
+        if len(qualified_workers) < participant_count:
+            hard_failures.append("PARTICIPANT_OR_TAKE_MIX_COVERAGE_INSUFFICIENT")
+        if len(qualified_environments) < minimum_environments:
+            hard_failures.append("ENVIRONMENT_DIVERSITY_INSUFFICIENT")
+        if not required_viewpoints.issubset(viewpoints):
+            hard_failures.append("VIEWPOINT_COVERAGE_INSUFFICIENT")
+        if not required_objects.issubset(object_ids):
+            hard_failures.append("OBJECT_COVERAGE_INSUFFICIENT")
+        if missing_rights:
+            hard_failures.append("RIGHTS_METADATA_MISSING")
+
+        provider_ratio = float(
+            (provider_features or {}).get(
+                "capture_valid_ratio",
+                (provider_features or {}).get("reconstruction_valid_ratio", 1.0),
+            )
+        )
+        return {
+            **(provider_features or {}),
+            "subject_id": (
+                "batch_" + next(iter(batch_ids)).removeprefix("bat_")
+                if len(batch_ids) == 1
+                else f"batch_mixed_{order_id.removeprefix('ord_')}"
+            ),
+            "capture_ids": unique_capture_ids,
+            "capture_count": len(rows),
+            "capture_valid_ratio": provider_ratio,
+            "participant_count": len(worker_takes),
+            "qualified_participant_count": len(qualified_workers),
+            "required_participant_count": participant_count,
+            "qualified_environment_count": len(qualified_environments),
+            "required_environment_count": minimum_environments,
+            "participant_take_counts": {
+                worker: dict(counts) for worker, counts in sorted(worker_takes.items())
+            },
+            "required_take_mix": required_mix,
+            "viewpoints_observed": sorted(viewpoints),
+            "objects_observed": sorted(object_ids),
+            "deterministic_hard_failures": sorted(set(hard_failures)),
+            "evidence_source": "forge_database_plus_signed_provider_features",
+        }
+
+    def record_pre_qc(
+        self, order_id: str, capture_ids: list[str], features: dict[str, Any], passed: bool
+    ) -> None:
+        with self.connection() as connection, connection.transaction():
+            connection.execute(
+                """
+                INSERT INTO qc_runs
+                  (id, order_id, subject_type, subject_id, stage, passed, reason_codes,
+                   metrics, thresholds, config_hash, simulation)
+                VALUES (%s, %s, 'capture_batch', %s, 'pre_qc', %s, %s,
+                        %s::jsonb, %s::jsonb, %s, FALSE)
+                ON CONFLICT (subject_id, stage, config_hash) DO UPDATE SET
+                  passed = EXCLUDED.passed,
+                  reason_codes = EXCLUDED.reason_codes,
+                  metrics = EXCLUDED.metrics,
+                  thresholds = EXCLUDED.thresholds
+                """,
+                (
+                    new_id("qc_"),
+                    order_id,
+                    str(features["subject_id"]),
+                    passed,
+                    list(features.get("deterministic_hard_failures", [])),
+                    canonical_json(features),
+                    canonical_json(
+                        {
+                            "capture_valid_ratio": 0.8,
+                            "participant_count": features["required_participant_count"],
+                            "environment_count": features["required_environment_count"],
+                            "take_mix": features["required_take_mix"],
+                        }
+                    ),
+                    idempotency_key("forge-collection-gate-v2", features),
+                ),
+            )
+            if passed:
+                connection.execute(
+                    """
+                    UPDATE demonstrations SET state = 'PRE_QC_PASSED'
+                    WHERE order_id = %s AND id = ANY(%s) AND state = 'SUBMITTED'
+                    """,
+                    (order_id, capture_ids),
+                )
+
+    def record_validation_qc(self, order_id: str, subject_id: str, result: dict[str, Any]) -> None:
+        order = self.load_order(order_id)
+        thresholds = order["contract"]["quality"]
+        passed = bool(result["passed"])
+        batch_id = "bat_" + subject_id.removeprefix("batch_")
+        with self.connection() as connection, connection.transaction():
+            connection.execute(
+                """
+                INSERT INTO qc_runs
+                  (id, order_id, subject_type, subject_id, stage, passed, reason_codes,
+                   metrics, thresholds, config_hash, simulation)
+                VALUES (%s, %s, 'delivery_batch', %s, 'final_validation', %s, %s,
+                        %s::jsonb, %s::jsonb, %s, FALSE)
+                ON CONFLICT (subject_id, stage, config_hash) DO UPDATE SET
+                  passed = EXCLUDED.passed,
+                  reason_codes = EXCLUDED.reason_codes,
+                  metrics = EXCLUDED.metrics,
+                  thresholds = EXCLUDED.thresholds
+                """,
+                (
+                    new_id("qc_"),
+                    order_id,
+                    subject_id,
+                    passed,
+                    list(result.get("hard_failures", [])),
+                    canonical_json(result),
+                    canonical_json(thresholds),
+                    idempotency_key("forge-final-validation-v2", result, thresholds),
+                ),
+            )
+            connection.execute(
+                """
+                UPDATE demonstrations
+                SET state = %s
+                WHERE order_id = %s AND batch_id = %s AND state = 'RECONSTRUCTION_COMPLETE'
+                """,
+                (
+                    "VALIDATION_PASSED" if passed else "VALIDATION_FAILED",
+                    order_id,
+                    batch_id,
+                ),
+            )
+
+    def latest_hard_failures(self, order_id: str) -> list[str]:
+        with self.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT ON (stage) stage, passed, reason_codes
+                FROM qc_runs
+                WHERE order_id = %s AND stage IN ('pre_qc', 'final_validation')
+                ORDER BY stage, created_at DESC
+                """,
+                (order_id,),
+            ).fetchall()
+        failures: list[str] = []
+        for row in rows:
+            if not bool(row["passed"]):
+                failures.extend(str(code) for code in row["reason_codes"])
+        return sorted(set(failures))
 
     def create_provider_request(
         self, order_id: str, provider: str, purpose: str, payload: dict[str, Any]
@@ -223,7 +457,17 @@ class WorkflowRuntime:
                 (provider, key),
             ).fetchone()
             if existing:
-                return str(existing["id"]), str(existing["correlation_id"]), False
+                retry = str(existing["state"]) == "FAILED"
+                if retry:
+                    connection.execute(
+                        """
+                        UPDATE provider_requests
+                        SET state = 'PENDING', response_payload = NULL, completed_at = NULL
+                        WHERE id = %s
+                        """,
+                        (existing["id"],),
+                    )
+                return str(existing["id"]), str(existing["correlation_id"]), retry
             connection.execute(
                 """
                 INSERT INTO provider_requests
@@ -297,13 +541,25 @@ class WorkflowRuntime:
         self, order_id: str, collection_plan: dict[str, Any]
     ) -> dict[str, Any]:
         client = TeracCampaignClient.from_env(self.http_timeout)
+        api_base = require_env("API_BASE_URL").rstrip("/")
+        collection_plan = {
+            **collection_plan,
+            "submission_contract": {
+                "schema_version": "forge.terac-submission-contract.v1",
+                "request_upload_url": f"{api_base}/captures/provider/terac/upload-url",
+                "complete_capture": f"{api_base}/captures/provider/terac/complete",
+                "batch_ready_webhook": f"{api_base}/webhooks/terac",
+                "provider_auth_header": "X-Forge-Provider-Token",
+                "original_media_required": True,
+                "one_capture_per_take": True,
+            },
+        }
         request_id, correlation_id, should_send = self.create_provider_request(
             order_id, "terac", "create_campaign", collection_plan
         )
         if not should_send:
             return {"correlation_id": correlation_id, "deduplicated": True}
-        result = client.create_campaign(correlation_id, collection_plan)
-        self.complete_provider_request(request_id, result.campaign_id, result.response)
+        batch_id = "bat_" + sha256(correlation_id.encode("utf-8")).hexdigest()[:20]
         with self.connection() as connection, connection.transaction():
             sequence = connection.execute(
                 "SELECT COALESCE(MAX(sequence), 0) + 1 AS next FROM capture_batches WHERE order_id = %s",
@@ -311,12 +567,39 @@ class WorkflowRuntime:
             ).fetchone()["next"]
             connection.execute(
                 """
-                INSERT INTO capture_batches (id, order_id, sequence, terac_campaign_id)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO capture_batches
+                  (id, order_id, sequence, terac_campaign_id, collection_plan,
+                   target_participant_count, target_source_clips)
+                VALUES (%s, %s, %s, NULL, %s::jsonb, %s, %s)
+                ON CONFLICT (id) DO NOTHING
                 """,
-                (new_id("bat_"), order_id, sequence, result.campaign_id),
+                (
+                    batch_id,
+                    order_id,
+                    sequence,
+                    canonical_json(collection_plan),
+                    int(collection_plan["target_participant_count"]),
+                    int(collection_plan["target_source_clips"]),
+                ),
             )
-        return result.response
+        dispatch_plan = {**collection_plan, "order_id": order_id, "batch_id": batch_id}
+        try:
+            result = client.create_campaign(correlation_id, dispatch_plan)
+        except Exception as error:
+            self.complete_provider_request(
+                request_id,
+                None,
+                {"error_code": type(error).__name__, "message": str(error)[:500]},
+                state="FAILED",
+            )
+            raise
+        self.complete_provider_request(request_id, result.campaign_id, result.response)
+        with self.connection() as connection:
+            connection.execute(
+                "UPDATE capture_batches SET terac_campaign_id = %s WHERE id = %s",
+                (result.campaign_id, batch_id),
+            )
+        return {**result.response, "batch_id": batch_id}
 
     def submit_runpod(self, order_id: str, capture_id: str) -> dict[str, Any]:
         api_key = require_env("RUNPOD_API_KEY")
@@ -352,8 +635,8 @@ class WorkflowRuntime:
                     """
                     INSERT INTO gpu_jobs
                       (id, idempotency_key, order_id, stage, status, container_image,
-                       pipeline_version, input_r2_keys, output_r2_prefix)
-                    VALUES (%s, %s, %s, 'reconstruction', 'PENDING', %s, %s, %s, %s)
+                       pipeline_version, input_r2_keys, output_r2_prefix, capture_id)
+                    VALUES (%s, %s, %s, 'reconstruction', 'PENDING', %s, %s, %s, %s, %s)
                     """,
                     (
                         job_id,
@@ -363,6 +646,7 @@ class WorkflowRuntime:
                         os.getenv("FORGE_PIPELINE_VERSION", "forge-compiler-v1"),
                         input_keys,
                         output_prefix,
+                        capture_id,
                     ),
                 )
 
@@ -378,14 +662,36 @@ class WorkflowRuntime:
                 "reset_to_zero": True,
             }
         elif mime_type.startswith("video/"):
-            config = {
-                "adapter_id": "videomanip-reconstruction-v1",
-                "input_kind": "source",
-                "object_id": str(capture["object_id"]),
-                "source_extension": ".mp4",
-                "stages": ["frames", "intrinsics", "hand_mesh", "masks", "obj_mesh", "retarget"],
-                "timeout_s": 7200,
-            }
+            claim_level = (order["contract"].get("output") or {}).get(
+                "claim_level", "sim_validated_robot_trajectory"
+            )
+            if claim_level == "human_video_training":
+                config = {
+                    "adapter_id": "forge-video-qc-v1",
+                    "input_kind": "source",
+                    "minimum_width_px": 1920,
+                    "minimum_height_px": 1080,
+                    "minimum_frame_rate_hz": 30,
+                    "timeout_s": 900,
+                }
+            elif self.environment == "production":
+                raise PermissionError("VIDEO_TO_ROBOT_TRAJECTORY_NOT_PRODUCTION_APPROVED")
+            else:
+                config = {
+                    "adapter_id": "videomanip-reconstruction-v1",
+                    "input_kind": "source",
+                    "object_id": str(capture["object_id"]),
+                    "source_extension": ".mp4",
+                    "stages": [
+                        "frames",
+                        "intrinsics",
+                        "hand_mesh",
+                        "masks",
+                        "obj_mesh",
+                        "retarget",
+                    ],
+                    "timeout_s": 7200,
+                }
         else:
             raise ValueError(f"CAPTURE_MIME_TYPE_UNSUPPORTED:{mime_type}")
 
@@ -444,7 +750,7 @@ class WorkflowRuntime:
             "RUNPOD_RECONSTRUCTION_ENDPOINT_ID"
         )
         order = self.load_order(order_id)
-        dataset_version = os.getenv("FORGE_DATASET_VERSION", "v1")
+        dataset_version = os.getenv("FORGE_DATASET_VERSION", "1.0.0")
         key = idempotency_key(order_id, "package", dataset_version, decision)
         with self.connection() as connection, connection.transaction():
             existing = connection.execute(
@@ -460,13 +766,17 @@ class WorkflowRuntime:
                 }
             artifacts = connection.execute(
                 """
-                SELECT id, kind, r2_key, sha256
+                SELECT id, kind, r2_key, sha256, demonstration_id
                 FROM artifacts
-                WHERE order_id = %s AND producer = 'runpod'
+                WHERE order_id = %s AND producer IN ('runpod', 'browser_upload')
                   AND kind NOT IN ('delivery_package', 'delivery_manifest')
+                  AND demonstration_id IN (
+                    SELECT id FROM demonstrations
+                    WHERE order_id = %s AND state = 'VALIDATION_PASSED'
+                  )
                 ORDER BY created_at, id
                 """,
-                (order_id,),
+                (order_id, order_id),
             ).fetchall()
             if not artifacts:
                 raise RuntimeError("DELIVERY_ARTIFACTS_MISSING")
@@ -513,6 +823,9 @@ class WorkflowRuntime:
                     "filename": filename,
                     "uri": uri,
                     "sha256": str(artifact["sha256"]),
+                    "demonstration_id": (
+                        str(artifact["demonstration_id"]) if artifact["demonstration_id"] else None
+                    ),
                 }
             )
 
@@ -523,6 +836,27 @@ class WorkflowRuntime:
             "dataset_version": dataset_version,
             "rights_profile": order["contract"]["rights_profile"],
             "quality_decision": decision,
+            "output": order["contract"].get(
+                "output",
+                {
+                    "claim_level": "sim_validated_robot_trajectory",
+                    "formats": ["forge_canonical"],
+                    "augmentation": "none",
+                },
+            ),
+            "skill": order["contract"]["skill"],
+            "acquisition": order["contract"].get("acquisition", {}),
+            "known_limitations": (
+                [
+                    "Training data only; no robot hardware validation is included.",
+                    "LeRobot, RLDS, and robomimic exports require accepted action/state signals.",
+                ]
+                if (order["contract"].get("output") or {}).get("claim_level")
+                == "human_video_training"
+                else ["Simulation validation does not constitute hardware validation."]
+            ),
+            "output_prefix": f"r2://{bucket}/{output_prefix}",
+            "pipeline_release": os.getenv("FORGE_PIPELINE_VERSION", "forge-compiler-v2"),
             "artifacts": manifest_artifacts,
         }
         config_uri = f"r2://{bucket}/{output_prefix}/package-config.json"

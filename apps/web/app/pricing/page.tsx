@@ -5,15 +5,16 @@ import { ArrowRight, Check, CreditCard, Database, ShieldCheck } from 'lucide-rea
 
 export const metadata: Metadata = {
   title: '$350 Dataset Pilot | FORGE',
-  description: 'Order a bounded FORGE robot-ready dataset pilot with secure Stripe checkout.',
+  description: 'Order a bounded FORGE multi-participant robotics training dataset pilot.',
 }
 
 const INCLUDED = [
   'One narrowly defined robot skill',
   'One target embodiment',
-  '1-10 physics-validated episodes',
-  'Trajectory, contact, quality, and lineage artifacts',
-  'One robot-ready dataset export',
+  '3 participants × 6 structured source clips',
+  'Success, failure, and recovery coverage',
+  'Rights receipts, QC evidence, lineage, and checksums',
+  'Training-ready FORGE canonical dataset bundle',
 ]
 
 export default function PricingPage() {
@@ -34,10 +35,11 @@ export default function PricingPage() {
         <section className="max-w-2xl">
           <p className="text-[15px] font-semibold uppercase tracking-[0.16em] text-forge-primary-active">FORGE starter pilot</p>
           <h1 className="mt-5 text-[clamp(3.25rem,6vw,6rem)] font-bold leading-[0.94] tracking-[-0.065em] text-forge-ink">
-            Robot-ready data for $350.
+            Multi-person training data for $350.
           </h1>
           <p className="mt-7 max-w-[56ch] text-lg leading-8 text-forge-ink-muted">
-            Define the motion your robot needs. FORGE plans acquisition, compiles physical trajectories, validates quality, and delivers the dataset—not robot hardware.
+            Define the motion your research needs. FORGE plans multi-person acquisition, validates
+            diversity and quality, compiles supported physical representations, and delivers data—not robot hardware.
           </p>
 
           <Link

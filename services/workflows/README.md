@@ -15,8 +15,13 @@ order_paid
   -> deterministic_validation
   -> request_pioneer_final_verdict
   -> request_band_quality_decision
-     -> package_dataset | create_terac_campaign | operator_queue | close_with_evidence
+     -> package_dataset | create_terac_campaign | close_with_evidence
 ```
+
+Production routes `REVIEW` to `close_with_evidence`; FORGE does not depend on a human QA
+queue. Deterministic rights, coverage, decode, and validation failures cannot be overridden
+by Band or Pioneer. Recollection creates a new capture batch so rejected media never leaks
+into a later accepted delivery.
 
 Code map:
 

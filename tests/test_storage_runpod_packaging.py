@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from jsonschema import validate
 
 from forge.contracts.models import ArtifactRef, GPUJobRequest
 from forge.integrations.r2.store import InMemoryObjectStore
@@ -48,9 +49,15 @@ class StorageRunPodPackagingTest(unittest.TestCase):
             "schema_version": "forge.package-job.v1",
             "order_id": "ord_1",
             "tenant_id": "ten_1",
-            "dataset_version": "v1",
+            "dataset_version": "1.0.0",
             "rights_profile": "customer_exclusive_derivatives",
             "quality_decision": {"route": "ACCEPT"},
+            "output_prefix": "r2://forge-dev/delivery/ord_1/1.0.0",
+            "output": {
+                "claim_level": "human_video_training",
+                "formats": ["forge_canonical"],
+                "augmentation": "training_recipe",
+            },
             "artifacts": [
                 {
                     "input_kind": "artifact_00000",
@@ -86,6 +93,12 @@ class StorageRunPodPackagingTest(unittest.TestCase):
         ) as archive:
             self.assertIn("manifest.json", archive.getnames())
             self.assertIn("artifacts/trajectory.npz", archive.getnames())
+            self.assertIn("exports/forge_canonical/artifact_index.jsonl", archive.getnames())
+            manifest = json.load(archive.extractfile("manifest.json"))
+            schema = json.loads(
+                Path("packages/contracts/schemas/forge.delivery.v1.json").read_text("utf-8")
+            )
+            validate(manifest, schema)
 
     def test_r2_missing_object_is_mapped_to_file_not_found(self) -> None:
         from forge.integrations.r2.store import R2ObjectStore

@@ -41,7 +41,7 @@ describe('WorkspaceTabs', () => {
     expect(screen.getByText('Lineage-safe episodes')).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Dataset' }))
-    expect(screen.getByText('The robot-ready package is still compiling')).toBeInTheDocument()
+    expect(screen.getByText('The dataset package is still compiling')).toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Activity' }))
     expect(screen.getByText('No activity recorded')).toBeInTheDocument()

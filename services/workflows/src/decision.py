@@ -46,6 +46,7 @@ def route_task_name(decision: QualityDecision) -> str:
     return {
         "ACCEPT": "package_dataset",
         "RECOLLECT": "create_terac_campaign",
-        "REVIEW": "operator_queue",
+        # Zero-human operations: ambiguous evidence closes safely instead of creating QA labor.
+        "REVIEW": "close_with_evidence",
         "BLOCK": "close_with_evidence",
     }[decision.route]

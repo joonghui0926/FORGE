@@ -50,13 +50,11 @@ async def fast_pre_qc(
     order_id: str, capture_ids: list[str], features: dict[str, Any]
 ) -> dict[str, Any]:
     runtime = WorkflowRuntime()
-    features = {
-        **features,
-        "subject_id": str(features.get("subject_id") or f"batch_{order_id.removeprefix('ord_')}"),
-    }
+    features = runtime.build_capture_features(order_id, capture_ids, features)
     hard_failures = list(features.get("deterministic_hard_failures", []))
-    passed = not hard_failures and float(features.get("reconstruction_valid_ratio", 0)) >= 0.8
+    passed = not hard_failures and float(features.get("capture_valid_ratio", 0)) >= 0.8
     payload = {"passed": passed, "hard_failures": hard_failures, "features": features}
+    runtime.record_pre_qc(order_id, capture_ids, features, passed)
     runtime.transition(order_id, {"ACQUIRING", "PRE_QC"}, "PRE_QC", "fast_pre_qc", payload)
     if not passed:
         runtime.wait(order_id, "fast_pre_qc_failed", payload)
@@ -92,16 +90,29 @@ async def deterministic_validation(
     runtime = WorkflowRuntime()
     order = runtime.load_order(order_id)
     quality = order["contract"]["quality"]
+    expected_claim = (order["contract"].get("output") or {}).get(
+        "claim_level", "sim_validated_robot_trajectory"
+    )
+    motion_family = order["contract"]["skill"].get("motion_family", "whole_body")
     failures: list[str] = []
-    if not bool(metrics.get("replay_success", False)):
-        failures.append("REPLAY_FAILED")
-    if float(metrics.get("max_penetration_m", 1)) > float(quality["max_penetration_m"]):
-        failures.append("PENETRATION_LIMIT_EXCEEDED")
-    if float(metrics.get("contact_phase_f1", 0)) < float(quality["min_contact_phase_f1"]):
-        failures.append("CONTACT_PHASE_F1_LOW")
-    if int(metrics.get("joint_limit_violation_count", 1)) > 0:
-        failures.append("JOINT_LIMIT_VIOLATION")
+    if metrics.get("claim_level") != expected_claim:
+        failures.append("OUTPUT_CLAIM_MISMATCH")
+    frames_total = int(metrics.get("frames_total", 0))
+    frames_valid = int(metrics.get("frames_valid", 0))
+    if frames_total <= 0 or frames_valid / frames_total < 0.8:
+        failures.append("VALID_FRAME_RATIO_LOW")
+    if expected_claim == "sim_validated_robot_trajectory":
+        if not bool(metrics.get("replay_success", False)):
+            failures.append("REPLAY_FAILED")
+        if float(metrics.get("max_penetration_m", 1)) > float(quality["max_penetration_m"]):
+            failures.append("PENETRATION_LIMIT_EXCEEDED")
+        if int(metrics.get("joint_limit_violation_count", 1)) > 0:
+            failures.append("JOINT_LIMIT_VIOLATION")
+        if motion_family in {"manipulation", "bimanual", "tool_use", "mobile_manipulation"}:
+            if float(metrics.get("contact_phase_f1", 0)) < float(quality["min_contact_phase_f1"]):
+                failures.append("CONTACT_PHASE_F1_LOW")
     result = {"subject_id": job_id, "passed": not failures, "hard_failures": failures, **metrics}
+    runtime.record_validation_qc(order_id, job_id, result)
     runtime.transition(
         order_id, {"PROCESSING", "VALIDATING"}, "VALIDATING", "deterministic_validation", result
     )
@@ -140,6 +151,17 @@ def request_band_quality_decision(order_id: str, evidence: dict[str, Any]) -> di
 async def apply_band_quality_decision(order_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     runtime = WorkflowRuntime()
     decision = QualityDecision.from_payload(payload)
+    active_hard_failures = runtime.latest_hard_failures(order_id)
+    if decision.route == "ACCEPT" and active_hard_failures:
+        return await close_with_evidence(
+            order_id,
+            {
+                "route": "BLOCK",
+                "reason_codes": ["BAND_HARD_GATE_OVERRIDE_REJECTED", *active_hard_failures],
+                "evidence_artifact_ids": list(decision.evidence_artifact_ids),
+                "policy_version": "forge-hard-gate-v2",
+            },
+        )
     task = route_task_name(decision)
     if task == "package_dataset":
         return await package_dataset(order_id, payload)

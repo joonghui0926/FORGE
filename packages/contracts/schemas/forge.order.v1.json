@@ -45,6 +45,43 @@
         "validated_episodes": { "type": "integer", "minimum": 1 }
       }
     },
+    "acquisition": {
+      "type": "object",
+      "required": ["participant_count", "clips_per_participant", "minimum_unique_environments", "expertise", "capture_mode", "take_mix"],
+      "additionalProperties": false,
+      "properties": {
+        "participant_count": { "type": "integer", "minimum": 2, "maximum": 50 },
+        "clips_per_participant": { "type": "integer", "minimum": 2, "maximum": 30 },
+        "minimum_unique_environments": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "expertise": { "type": "string", "enum": ["general_contributor", "experienced_practitioner", "verified_domain_expert"] },
+        "capture_mode": { "type": "string", "enum": ["egocentric", "third_person", "mixed_views", "synchronized_multiview"] },
+        "take_mix": {
+          "type": "object",
+          "required": ["success", "failure", "recovery"],
+          "additionalProperties": false,
+          "properties": {
+            "success": { "type": "integer", "minimum": 1 },
+            "failure": { "type": "integer", "minimum": 0 },
+            "recovery": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["claim_level", "formats", "augmentation"],
+      "additionalProperties": false,
+      "properties": {
+        "claim_level": { "type": "string", "enum": ["human_video_training", "sim_validated_robot_trajectory"] },
+        "formats": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["forge_canonical", "lerobot_v3", "rlds", "robomimic"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "augmentation": { "type": "string", "enum": ["none", "training_recipe", "validated_generated_episodes"] }
+      }
+    },
     "coverage": {
       "type": "object",
       "required": ["object_ids", "viewpoint_bins"],

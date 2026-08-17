@@ -24,7 +24,7 @@ export function VolumeQualityStep({ volume, quality, onChangeVolume, onChangeQua
     <div className="flex flex-col gap-5">
       <Field
         id="episode-count" label="Validated episode count" type="number" required
-        help="The $350 pilot includes 1-10 physics-validated episodes"
+        help="The $350 pilot includes 1-10 accepted training episodes from the collected source pool"
         value={volume}
         onChange={(e) => onChangeVolume(Math.min(10, Math.max(1, parseInt(e.target.value, 10) || 1)))}
         min={1} max={10} step={1}
@@ -39,7 +39,7 @@ export function VolumeQualityStep({ volume, quality, onChangeVolume, onChangeQua
         <div>
           <p className="text-sm font-medium text-forge-ink">Require source replay pass</p>
           <p className="text-sm text-forge-ink-muted">
-            Each episode must pass source replay before retargeting. Recommended.
+            Applied only when compatible robot actions exist; source-video jobs use structural and diversity gates.
           </p>
         </div>
       </label>

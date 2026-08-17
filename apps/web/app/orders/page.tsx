@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 
 const VIEW_CONFIG = {
   ready: {
-    title: 'Robot-ready data',
+    title: 'Ready datasets',
     description: 'Validated datasets ready for review and delivery.',
     states: ['READY'],
   },

@@ -29,10 +29,12 @@ class CollectionPlannerTest(unittest.TestCase):
 
         self.assertEqual(plan.validation_profile, "aerial-flight-v1")
         self.assertEqual(plan.worker_requirement.expertise, "verified_domain_expert")
-        self.assertEqual(plan.worker_requirement.minimum_workers, 2)
+        self.assertEqual(plan.worker_requirement.minimum_workers, 3)
+        self.assertEqual(plan.target_source_clips, 18)
+        self.assertEqual(plan.per_participant_take_mix["recovery"], 1)
         self.assertEqual(plan.capture_requirements[0].minimum_frame_rate_hz, 60)
         self.assertIn("airframe", plan.capture_requirements[0].required_visible_entities)
-        self.assertGreater(plan.initial_assignment_count, plan.target_accepted_demonstrations)
+        self.assertGreater(plan.initial_assignment_count, plan.target_participant_count)
 
     def test_non_hazardous_manipulation_can_use_general_contributor(self) -> None:
         request = CustomerTaskRequest(

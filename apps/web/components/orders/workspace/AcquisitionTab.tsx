@@ -9,7 +9,13 @@ export function AcquisitionTab({ order }: { order: Order }) {
 
   const submitted = acquisition.batches.reduce((sum, batch) => sum + batch.submitted, 0)
   const accepted = acquisition.batches.reduce((sum, batch) => sum + batch.accepted, 0)
-  const target = order.volume_validated_episodes ?? 0
+  const target = acquisition.batches.reduce((max, batch) => Math.max(max, batch.target_source_clips ?? 0), 0)
+  const participantTarget = acquisition.batches.reduce((max, batch) => Math.max(max, batch.target_participant_count ?? 0), 0)
+  const coverage = acquisition.coverage ?? {
+    unique_participants: 0,
+    unique_environments: 0,
+    take_counts: { success: 0, failure: 0, recovery: 0 },
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -18,10 +24,11 @@ export function AcquisitionTab({ order }: { order: Order }) {
         <p className="mt-2 max-w-3xl text-[15px] leading-6 text-forge-primary-ink">
           Terac turns the approved collection plan into staffed, rights-cleared capture campaigns. Band plans coverage before each campaign and requests recollection when evidence is insufficient.
         </p>
-        <dl className="mt-5 grid grid-cols-3 gap-5">
-          <div><dt className="text-sm text-forge-ink-muted">Target</dt><dd className="mt-1 text-2xl font-semibold tabular-nums text-forge-ink">{target}</dd></div>
+        <dl className="mt-5 grid grid-cols-2 gap-5 sm:grid-cols-4">
+          <div><dt className="text-sm text-forge-ink-muted">Source target</dt><dd className="mt-1 text-2xl font-semibold tabular-nums text-forge-ink">{target}</dd></div>
           <div><dt className="text-sm text-forge-ink-muted">Submitted</dt><dd className="mt-1 text-2xl font-semibold tabular-nums text-forge-ink">{submitted}</dd></div>
           <div><dt className="text-sm text-forge-ink-muted">Accepted</dt><dd className="mt-1 text-2xl font-semibold tabular-nums text-forge-ink">{accepted}</dd></div>
+          <div><dt className="text-sm text-forge-ink-muted">Participants</dt><dd className="mt-1 text-2xl font-semibold tabular-nums text-forge-ink">{coverage.unique_participants}/{participantTarget}</dd></div>
         </dl>
       </section>
 
@@ -73,12 +80,14 @@ export function AcquisitionTab({ order }: { order: Order }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
-              <thead><tr className="text-forge-ink-muted"><th className="pb-3 font-medium">Capture</th><th className="pb-3 font-medium">Object</th><th className="pb-3 font-medium">Viewpoint</th><th className="pb-3 font-medium">State</th><th className="pb-3 font-medium">Submitted</th></tr></thead>
+              <thead><tr className="text-forge-ink-muted"><th className="pb-3 font-medium">Capture</th><th className="pb-3 font-medium">Participant</th><th className="pb-3 font-medium">Take</th><th className="pb-3 font-medium">Environment</th><th className="pb-3 font-medium">Viewpoint</th><th className="pb-3 font-medium">State</th><th className="pb-3 font-medium">Submitted</th></tr></thead>
               <tbody>
                 {acquisition.captures.map((capture) => (
                   <tr key={capture.capture_id} className="border-t border-forge-border">
                     <td className="py-3 pr-4 font-mono text-forge-ink">{capture.capture_id}</td>
-                    <td className="py-3 pr-4 text-forge-ink">{capture.object_id}</td>
+                    <td className="py-3 pr-4 font-mono text-forge-ink-muted">{capture.participant_id}</td>
+                    <td className="py-3 pr-4 text-forge-ink">{capture.take_kind} #{(capture.take_index ?? 0) + 1}</td>
+                    <td className="py-3 pr-4 text-forge-ink-muted">{capture.environment_id}</td>
                     <td className="py-3 pr-4 text-forge-ink-muted">{capture.viewpoint_bin}</td>
                     <td className="py-3 pr-4 text-forge-ink-muted">{capture.state.replaceAll('_', ' ')}</td>
                     <td className="py-3 text-forge-ink-muted">{new Date(capture.submitted_at).toLocaleString('en-US')}</td>

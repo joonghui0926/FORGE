@@ -44,6 +44,19 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
         <div>
           <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Volume</dt>
           <dd className="text-forge-ink">{data.volume_validated_episodes} validated episodes</dd>
+          <dd className="text-forge-ink-muted mt-0.5">
+            {data.acquisition.participant_count} participants × {data.acquisition.clips_per_participant} clips
+            {' '}({data.acquisition.participant_count * data.acquisition.clips_per_participant} source clips)
+          </dd>
+          <dd className="text-forge-ink-muted mt-0.5">
+            {data.acquisition.take_mix.success} success, {data.acquisition.take_mix.failure} failure,
+            {' '}{data.acquisition.take_mix.recovery} recovery per participant
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Delivery</dt>
+          <dd className="text-forge-ink">Training-ready human video bundle</dd>
+          <dd className="text-forge-ink-muted mt-0.5">FORGE canonical · checksums · lineage · QC evidence</dd>
         </div>
         <div>
           <dt className="text-sm font-medium text-forge-ink-muted uppercase tracking-wide mb-1">Rights</dt>
@@ -53,9 +66,9 @@ export function ReviewStep({ data, onBack, onSubmit, submitting, error }: Review
 
       <div className="flex items-end justify-between gap-6 border-t border-forge-border/70 pt-5">
         <div>
-          <p className="text-sm font-medium text-forge-ink-muted">One-time dataset pilot · 1-10 episodes</p>
+          <p className="text-sm font-medium text-forge-ink-muted">One-time multi-participant dataset pilot</p>
           <p className="mt-1 text-sm leading-6 text-forge-ink-muted">
-            Robot-ready data delivery. Robot hardware is not included.
+            Data delivery only. Robot hardware and hardware validation are not included.
           </p>
         </div>
         <p className="shrink-0 text-3xl font-semibold tracking-[-0.04em] text-forge-ink">$350</p>
