@@ -11,7 +11,8 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY workers ./workers
-RUN python -m pip install --no-cache-dir .[cloud,gpu,data]
+RUN python -m pip install --no-cache-dir --ignore-installed "cryptography==50.0.0" \
+    && python -m pip install --no-cache-dir .[cloud,gpu,data]
 
 ENV PYTHONUNBUFFERED=1 \
     FORGE_ENV=production \
