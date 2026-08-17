@@ -36,7 +36,7 @@ customer contract
 RunPod and Cloudflare R2 are the GPU and object-storage data plane. They are essential
 infrastructure, but they do not decide what to collect or what is safe to deliver.
 
-The Python package in `src/forge` is the Joonghui-owned compiler boundary. Paper and
+The Python package in `src/forge` is the core compiler boundary. Paper and
 vendor repositories remain external, pinned adapters. FORGE owns the contracts,
 stable-contact compiler, Canonical Skill IR, quality gates, augmentation authorization,
 provenance, and delivery format.
@@ -49,6 +49,56 @@ RunPod execution, deterministic and Pioneer/Band quality evidence, lineage-safe 
 the immutable delivery manifest, expiring R2 dataset downloads, the audit timeline, and
 payment/rights status. Empty views describe the next production gate; no tab is marked
 "coming soon."
+
+## Repository layout
+
+```
+FORGE/
+├── apps/
+│   └── web/                    # Next.js customer-facing app (TypeScript)
+│       ├── app/                # App Router pages: landing, orders, pricing, auth
+│       ├── components/         # UI components: layout, orders, shared primitives
+│       ├── lib/                # API client, server utilities, shared types
+│       └── __tests__/          # Vitest unit and component tests
+│
+├── packages/                   # Shared TypeScript packages (pnpm workspaces)
+│   ├── contracts/              # JSON Schema definitions + validator for all Forge contracts
+│   ├── db/                     # Postgres client and SQL migration files
+│   ├── ui/                     # Design tokens, primitives, pattern components (in progress)
+│   ├── observability/          # Shared logging/tracing helpers (in progress)
+│   └── skill-ir/               # Canonical Skill IR TypeScript types (in progress)
+│
+├── services/                   # Backend services
+│   ├── api/                    # FastAPI Python REST service (orders, captures, deliveries)
+│   └── workflows/              # Durable task orchestration worker (Band/Pioneer decisions)
+│
+├── src/forge/                  # Python compiler boundary (contracts, stages, integrations)
+│   ├── modules/                # Pipeline stages: collection, reconstruction, retarget,
+│   │                           #   stable_contact, amplification, validation, packaging
+│   ├── adapters/papers/        # Pinned external paper adapters (GMR, DoAsIDo, TWIST, etc.)
+│   ├── integrations/           # Platform clients: Terac, Band, Pioneer, Render, RunPod, R2
+│   ├── contracts/              # Python codec and models for Forge JSON contracts
+│   └── business/               # Pricing and business logic
+│
+├── workers/                    # RunPod GPU worker entrypoints and per-stage handlers
+│
+├── scripts/                    # One-off operational scripts (benchmarks, R2 checks, replays)
+│
+├── tests/                      # Python unit tests for the compiler and pipeline
+│
+├── benchmarks/                 # Benchmark run evidence (JSON) and benchmark README
+│
+├── infra/                      # Infrastructure config: R2 CORS, Render YAML, RunPod Dockerfile
+│
+├── docs/                       # Architecture docs, pricing model, integration notes
+│   └── superpowers/            # AI-generated specs and implementation plans
+│
+└── third_party/                # License ledger and upstream patch files
+```
+
+**Monorepo tooling:** TypeScript apps and packages use pnpm workspaces with a shared
+`tsconfig.base.json`. Python code uses a `pyproject.toml`-managed package (`src/forge`) with
+per-service virtual environments under `services/api/.venv`.
 
 ## Local verification
 
@@ -66,7 +116,7 @@ Read these before changing the product contract:
 
 - `HANDOFF_PRODUCT_AND_ARCHITECTURE.md`
 - `HANDOFF_TEAM_OWNERSHIP.md`
-- `docs/JOONGHUI_COMPILER.md`
+- `docs/JOONGHUI_COMPILER.md` — compiler architecture and design decisions
 - `docs/PRICING_AND_UNIT_ECONOMICS.md`
 - `third_party/LICENSE_LEDGER.md`
 
