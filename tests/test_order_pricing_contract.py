@@ -55,3 +55,28 @@ def test_350_dollar_starter_accepts_one_to_ten_episodes(episodes: int) -> None:
 def test_350_dollar_starter_rejects_out_of_scope_volume(episodes: int) -> None:
     with pytest.raises(ValidationError):
         CreateOrderRequest.model_validate(_starter_order(episodes))
+
+
+def test_starter_defaults_to_three_participants_and_structured_recovery() -> None:
+    order = CreateOrderRequest.model_validate(_starter_order(10))
+    assert order.acquisition.participant_count == 3
+    assert order.acquisition.clips_per_participant == 6
+    assert order.acquisition.take_mix.model_dump() == {
+        "success": 4,
+        "failure": 1,
+        "recovery": 1,
+    }
+    assert order.output.claim_level == "human_video_training"
+    assert order.output.formats == ["forge_canonical"]
+
+
+def test_take_mix_must_equal_clips_per_participant() -> None:
+    payload = _starter_order(10)
+    payload["acquisition"] = {
+        "participant_count": 3,
+        "clips_per_participant": 6,
+        "minimum_unique_environments": 2,
+        "take_mix": {"success": 6, "failure": 1, "recovery": 1},
+    }
+    with pytest.raises(ValidationError):
+        CreateOrderRequest.model_validate(payload)

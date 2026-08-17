@@ -38,3 +38,13 @@ async def require_worker_callback_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid callback token"
         )
+
+
+async def require_terac_ingest_token(
+    x_forge_provider_token: str = Header(...),
+) -> None:
+    expected = os.getenv("TERAC_INGEST_TOKEN", "")
+    if not expected or not hmac.compare_digest(expected, x_forge_provider_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Terac ingest token"
+        )

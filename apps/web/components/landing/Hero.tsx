@@ -13,7 +13,8 @@ export function Hero() {
           Teach any robot from real motion.
         </h1>
         <p className="mt-7 max-w-[58ch] text-lg leading-8 text-forge-ink-muted sm:text-xl">
-          Tell us the skill. FORGE plans collection, compiles physical trajectories, validates quality, and delivers a robot-ready dataset your team can train on.
+          Tell us the skill. FORGE plans multi-person collection, verifies rights and coverage,
+          compiles supported physical representations, and delivers an auditable dataset your team can train on.
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-5">
           <Link href="/pricing">
@@ -22,7 +23,7 @@ export function Hero() {
             </Button>
           </Link>
           <span className="text-[15px] font-medium text-forge-ink-muted">
-            $350 pilot dataset · Quality-gated at every stage
+            3 participants × 6 clips · Quality-gated at every stage
           </span>
         </div>
       </div>

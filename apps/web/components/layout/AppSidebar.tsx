@@ -32,7 +32,7 @@ const NAV_GROUPS = [
   {
     label: 'Delivery',
     items: [
-      { href: '/orders?view=ready', label: 'Robot-ready data', icon: Database, view: 'ready' },
+      { href: '/orders?view=ready', label: 'Ready datasets', icon: Database, view: 'ready' },
       { href: '/orders?view=quality', label: 'Quality pipeline', icon: ShieldCheck, view: 'quality' },
       { href: '/orders?view=packages', label: 'Packages', icon: PackageCheck, view: 'packages' },
     ],

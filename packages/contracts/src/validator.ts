@@ -1,8 +1,18 @@
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
+import type { ErrorObject } from "ajv";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
+type AjvInstance = {
+  addSchema: (schema: unknown, id: string) => void;
+  validate: (schemaId: string, data: unknown) => boolean;
+  errors: ErrorObject[] | null;
+};
+const Ajv = (require("ajv").default ?? require("ajv")) as new (
+  options: Record<string, unknown>
+) => AjvInstance;
+const addFormats = (require("ajv-formats").default ?? require("ajv-formats")) as (
+  instance: AjvInstance
+) => void;
 
 const ajv = new Ajv({ allErrors: true, strict: true });
 addFormats(ajv);
@@ -34,7 +44,7 @@ export function validate(schemaId: SchemaId, data: unknown): { valid: boolean; e
   return {
     valid: false,
     errors: (ajv.errors ?? []).map(
-      (e) => `${e.instancePath || "/"} ${e.message ?? "invalid"}`
+      (e: ErrorObject) => `${e.instancePath || "/"} ${e.message ?? "invalid"}`
     ),
   };
 }

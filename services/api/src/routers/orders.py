@@ -3,7 +3,7 @@ import os
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 from forge.integrations.stripe import build_order_payment_link
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 import stripe
 from typing import Literal
 
@@ -64,10 +64,64 @@ class CoverageSpec(BaseModel):
     grasp_variation: Literal["required", "preferred", "not_required"] = "preferred"
 
 
+class TakeMixSpec(BaseModel):
+    success: int = Field(default=4, ge=1, le=30)
+    failure: int = Field(default=1, ge=0, le=30)
+    recovery: int = Field(default=1, ge=0, le=30)
+
+
+class AcquisitionSpec(BaseModel):
+    participant_count: int = Field(default=3, ge=2, le=50)
+    clips_per_participant: int = Field(default=6, ge=2, le=30)
+    minimum_unique_environments: int = Field(default=2, ge=1, le=50)
+    expertise: Literal[
+        "general_contributor", "experienced_practitioner", "verified_domain_expert"
+    ] = "general_contributor"
+    capture_mode: Literal["egocentric", "third_person", "mixed_views", "synchronized_multiview"] = (
+        "mixed_views"
+    )
+    take_mix: TakeMixSpec = Field(default_factory=TakeMixSpec)
+
+    @model_validator(mode="after")
+    def validate_coverage(self) -> "AcquisitionSpec":
+        if self.minimum_unique_environments > self.participant_count:
+            raise ValueError("minimum_unique_environments cannot exceed participant_count")
+        if (
+            self.take_mix.success + self.take_mix.failure + self.take_mix.recovery
+            != self.clips_per_participant
+        ):
+            raise ValueError("take_mix must sum to clips_per_participant")
+        return self
+
+
+class OutputSpec(BaseModel):
+    claim_level: Literal["human_video_training", "sim_validated_robot_trajectory"] = (
+        "human_video_training"
+    )
+    formats: list[Literal["forge_canonical", "lerobot_v3", "rlds", "robomimic"]] = Field(
+        default_factory=lambda: ["forge_canonical"], min_length=1
+    )
+    augmentation: Literal["none", "training_recipe", "validated_generated_episodes"] = (
+        "training_recipe"
+    )
+
+    @model_validator(mode="after")
+    def validate_formats(self) -> "OutputSpec":
+        if len(set(self.formats)) != len(self.formats):
+            raise ValueError("output formats must be unique")
+        if self.claim_level == "human_video_training" and set(self.formats) != {"forge_canonical"}:
+            raise ValueError(
+                "human video orders use forge_canonical; robot-learning adapters require accepted actions"
+            )
+        return self
+
+
 class CreateOrderRequest(BaseModel):
     skill: SkillSpec
     embodiment: EmbodimentSpec
     volume_validated_episodes: int = Field(ge=1, le=10)
+    acquisition: AcquisitionSpec = Field(default_factory=AcquisitionSpec)
+    output: OutputSpec = Field(default_factory=OutputSpec)
     coverage: CoverageSpec
     quality: QualitySpec
     rights_profile: Literal["customer_exclusive_derivatives", "forge_retained", "open"]
@@ -91,18 +145,21 @@ def _workspace_data(connection, order_id: str, payment_reference: str | None) ->
         SELECT b.id, b.sequence, b.terac_campaign_id, b.created_at,
                COUNT(d.id) AS submitted,
                COUNT(d.id) FILTER (WHERE d.state IN ('PRE_QC_PASSED', 'VALIDATION_PASSED'))
-                 AS accepted
+                 AS accepted,
+               b.target_participant_count, b.target_source_clips
         FROM capture_batches b
         LEFT JOIN demonstrations d ON d.batch_id = b.id
         WHERE b.order_id = %s
-        GROUP BY b.id, b.sequence, b.terac_campaign_id, b.created_at
+        GROUP BY b.id, b.sequence, b.terac_campaign_id, b.created_at,
+                 b.target_participant_count, b.target_source_clips
         ORDER BY b.sequence ASC
         """,
         (order_id,),
     ).fetchall()
     captures = connection.execute(
         """
-        SELECT id, state::text, object_id, viewpoint_bin, submitted_at
+        SELECT id, state::text, object_id, viewpoint_bin, submitted_at,
+               worker_subject_id, environment_id, take_kind, take_index
         FROM demonstrations
         WHERE order_id = %s
         ORDER BY submitted_at DESC
@@ -219,6 +276,8 @@ def _workspace_data(connection, order_id: str, payment_reference: str | None) ->
                     "created_at": row[3].isoformat(),
                     "submitted": row[4],
                     "accepted": row[5],
+                    "target_participant_count": row[6],
+                    "target_source_clips": row[7],
                 }
                 for row in batches
             ],
@@ -229,9 +288,21 @@ def _workspace_data(connection, order_id: str, payment_reference: str | None) ->
                     "object_id": row[2],
                     "viewpoint_bin": row[3],
                     "submitted_at": row[4].isoformat(),
+                    "participant_id": row[5],
+                    "environment_id": row[6],
+                    "take_kind": row[7],
+                    "take_index": row[8],
                 }
                 for row in captures
             ],
+            "coverage": {
+                "unique_participants": len({row[5] for row in captures}),
+                "unique_environments": len({row[6] for row in captures if row[6]}),
+                "take_counts": {
+                    kind: sum(1 for row in captures if row[7] == kind)
+                    for kind in ("success", "failure", "recovery")
+                },
+            },
             "provider_requests": [
                 item
                 for item in providers
@@ -337,6 +408,8 @@ def create_order(
         "skill": body.skill.model_dump(),
         "embodiment": body.embodiment.model_dump(),
         "volume": {"validated_episodes": body.volume_validated_episodes},
+        "acquisition": body.acquisition.model_dump(),
+        "output": body.output.model_dump(),
         "coverage": body.coverage.model_dump(),
         "quality": body.quality.model_dump(),
         "rights_profile": body.rights_profile,

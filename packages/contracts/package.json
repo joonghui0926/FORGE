@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "tsc && node --experimental-vm-modules ./node_modules/jest/bin/jest.js dist/validator.test.js",
     "validate": "node dist/validate.js"
   },
   "dependencies": {

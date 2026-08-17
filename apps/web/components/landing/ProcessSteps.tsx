@@ -1,9 +1,9 @@
 const STEPS = [
   'Dataset Planning',
-  'Human Acquisition',
+  'Multi-person Acquisition',
   'Physical Data Compilation',
-  'Robot Retargeting',
-  'Physics Validation',
+  'Supported Retargeting',
+  'Contract-specific Validation',
   'Dataset Amplification',
   'Delivery',
 ]

@@ -76,6 +76,8 @@ class BandDecisionClient:
 
         content = (
             f"@{target.handle.lstrip('@')} FORGE {purpose} decision required. "
+            "Operate without manual QA: deterministic hard gates are not overridable; "
+            "choose RECOLLECT for remediable evidence gaps and BLOCK for unsafe or ambiguous evidence. "
             f"Return only signed decision JSON containing correlation_id={correlation_id}.\n"
             + json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         )

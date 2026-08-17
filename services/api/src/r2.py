@@ -1,3 +1,5 @@
+from hashlib import sha256
+import json
 import os
 
 import boto3
@@ -58,6 +60,18 @@ def generate_upload_url(
 def head_object(r2_key: str) -> dict:
     """Returns object metadata dict. Raises ClientError (404) if not found."""
     return _client().head_object(Bucket=BUCKET, Key=r2_key)
+
+
+def write_consent_receipt(r2_key: str, receipt: dict) -> tuple[str, int]:
+    """Persist the exact rights receipt used to accept a capture."""
+    body = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    _client().put_object(
+        Bucket=BUCKET,
+        Key=r2_key,
+        Body=body,
+        ContentType="application/json",
+    )
+    return sha256(body).hexdigest(), len(body)
 
 
 def generate_download_url(r2_key: str, expires_in: int = 3600) -> str:

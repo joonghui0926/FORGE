@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+from hashlib import sha256
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from forge.integrations.render import start_workflow_task
@@ -31,7 +32,8 @@ def gpu_job_callback(
         row = connection.execute(
             """
             SELECT j.order_id, j.status::text, o.tenant_id, j.stage,
-                   j.output_r2_prefix, o.contract, o.state::text
+                   j.output_r2_prefix, o.contract, o.state::text, j.capture_id,
+                   (SELECT d.batch_id FROM demonstrations d WHERE d.id = j.capture_id) AS batch_id
             FROM gpu_jobs j JOIN dataset_orders o ON o.id = j.order_id
             WHERE j.id = %s FOR UPDATE
             """,
@@ -46,6 +48,8 @@ def gpu_job_callback(
             dict(row[5]),
             str(row[6]),
         )
+        capture_id = str(row[7]) if row[7] else None
+        batch_id = str(row[8]) if row[8] else None
         if os.getenv("FORGE_ENV", "development") == "production" and result.simulation:
             raise HTTPException(status_code=422, detail="Simulation result cannot enter production")
         target_status = {
@@ -80,11 +84,32 @@ def gpu_job_callback(
                 connection.execute(
                     """
                     INSERT INTO artifacts
-                      (id, tenant_id, order_id, kind, r2_key, sha256, schema_version, producer)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'forge.gpu-result.v1', 'runpod')
+                      (id, tenant_id, order_id, kind, r2_key, sha256, schema_version,
+                       producer, job_id, demonstration_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'forge.gpu-result.v1',
+                            'runpod', %s, %s)
                     ON CONFLICT (tenant_id, sha256, kind) DO NOTHING
                     """,
-                    (_new_id("art_"), tenant_id, order_id, artifact.kind, r2_key, artifact.sha256),
+                    (
+                        _new_id("art_"),
+                        tenant_id,
+                        order_id,
+                        artifact.kind,
+                        r2_key,
+                        artifact.sha256,
+                        result.job_id,
+                        capture_id,
+                    ),
+                )
+            if capture_id and stage == "reconstruction":
+                capture_state = (
+                    "RECONSTRUCTION_COMPLETE"
+                    if target_status == "SUCCEEDED"
+                    else "VALIDATION_FAILED"
+                )
+                connection.execute(
+                    "UPDATE demonstrations SET state = %s WHERE id = %s",
+                    (capture_state, capture_id),
                 )
         package_response: dict | None = None
         if stage == "package":
@@ -103,9 +128,12 @@ def gpu_job_callback(
                 if order_state not in {"PACKAGING", "READY"}:
                     raise HTTPException(status_code=409, detail="Order is not packaging")
                 dataset_version = output_prefix.rstrip("/").rsplit("/", 1)[-1]
-                delivery_id = _new_id("del_")
+                delivery_id = (
+                    "del_"
+                    + sha256(f"{order_id}:{dataset_version}".encode("utf-8")).hexdigest()[:20]
+                )
                 delivery_manifest = {
-                    "schema_version": "forge.delivery.v1",
+                    "schema_version": "forge.delivery-index.v1",
                     "order_id": order_id,
                     "dataset_version": dataset_version,
                     "package_key": package.uri.split("/", 3)[-1],
@@ -171,20 +199,26 @@ def gpu_job_callback(
                 }
         if package_response is not None:
             return package_response
+        if stage == "reconstruction" and batch_id is None:
+            raise HTTPException(status_code=409, detail="Reconstruction job has no capture batch")
         batch = connection.execute(
             """
-            SELECT id, status::text, result_metrics
-            FROM gpu_jobs
-            WHERE order_id = %s AND stage = 'reconstruction'
-            ORDER BY created_at
+            SELECT j.id, j.status::text, j.result_metrics
+            FROM gpu_jobs j
+            JOIN demonstrations d ON d.id = j.capture_id
+            WHERE j.order_id = %s AND j.stage = 'reconstruction' AND d.batch_id = %s
+            ORDER BY j.created_at
             """,
-            (order_id,),
+            (order_id, batch_id),
         ).fetchall()
     if any(str(job[1]) in {"PENDING", "RUNNING"} for job in batch):
         return {"received": True, "status": target_status, "waiting_for_batch": True}
 
     metric_documents = [dict(job[2] or {}) for job in batch]
     failed = any(str(job[1]) != "SUCCEEDED" for job in batch)
+    claim_levels = {
+        str(item.get("claim_level")) for item in metric_documents if item.get("claim_level")
+    }
     metrics = {
         "frames_total": sum(int(item.get("frames_total", 0)) for item in metric_documents),
         "frames_valid": sum(int(item.get("frames_valid", 0)) for item in metric_documents),
@@ -203,8 +237,9 @@ def gpu_job_callback(
         "trajectory_duration_s": sum(
             float(item.get("trajectory_duration_s", 0)) for item in metric_documents
         ),
+        "claim_level": next(iter(claim_levels)) if len(claim_levels) == 1 else "mixed",
     }
-    batch_subject_id = "batch_" + order_id.removeprefix("ord_")
+    batch_subject_id = "batch_" + str(batch_id).removeprefix("bat_")
     run_id = start_workflow_task("deterministic_validation", [order_id, batch_subject_id, metrics])
     return {"received": True, "task_run_id": run_id}
 

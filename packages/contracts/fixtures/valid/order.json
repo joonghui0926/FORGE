@@ -4,6 +4,7 @@
   "tenant_id": "ten_test_001",
   "skill": {
     "name": "open_and_close_bottle_cap",
+    "motion_family": "manipulation",
     "initial_state": "cap fully seated",
     "success_predicate": "cap separates, then returns to seated pose",
     "failure_predicates": ["bottle falls", "cap leaves workspace"],

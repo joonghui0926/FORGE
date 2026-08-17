@@ -1,7 +1,7 @@
 # FORGE Physical Data Compiler
 
 FORGE turns a customer task contract and purpose-built physical-behavior observations
-into a versioned, robot-ready dataset. Sources can be human video, another robot's state,
+into a versioned, claim-scoped robotics training dataset. Sources can be human video, another robot's state,
 teleoperation, multimodal capture, or simulation. The product is not a raw-video
 marketplace: it plans collection, reconstructs metric actor/counterpart interaction,
 compiles stable counterpart-side contacts, retargets them to a customer embodiment,

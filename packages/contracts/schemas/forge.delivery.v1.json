@@ -42,7 +42,7 @@
         "required": ["format", "uri"],
         "additionalProperties": false,
         "properties": {
-          "format": { "type": "string", "enum": ["lerobot", "rlds", "customer_schema"] },
+          "format": { "type": "string", "enum": ["forge_canonical", "lerobot_v3", "rlds", "robomimic", "customer_schema"] },
           "uri": { "type": "string", "pattern": "^r2://" }
         }
       }

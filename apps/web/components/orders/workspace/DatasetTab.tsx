@@ -5,7 +5,7 @@ import { SectionTitle, WorkspaceEmpty } from './WorkspaceEmpty'
 export function DatasetTab({ order }: { order: Order }) {
   const delivery = order.workspace?.delivery
   if (!delivery) {
-    return <WorkspaceEmpty title="The robot-ready package is still compiling">Once every deterministic and learned quality gate passes, FORGE writes an immutable manifest and enables a one-hour signed R2 download.</WorkspaceEmpty>
+    return <WorkspaceEmpty title="The dataset package is still compiling">Once every contract-specific quality gate passes, FORGE writes an immutable manifest and enables a one-hour signed R2 download.</WorkspaceEmpty>
   }
 
   return (

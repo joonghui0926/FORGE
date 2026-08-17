@@ -18,10 +18,27 @@ class ProcessorOutput:
     media_type: str = "application/json"
 
 
+@dataclass(frozen=True)
+class StageResult:
+    outputs: tuple[ProcessorOutput, ...]
+    metrics: dict[str, float | int | bool | str]
+    warnings: tuple[str, ...] = ()
+    status: str = "succeeded"
+
+    def __iter__(self):
+        return iter(self.outputs)
+
+    def __len__(self) -> int:
+        return len(self.outputs)
+
+    def __getitem__(self, index: int) -> ProcessorOutput:
+        return self.outputs[index]
+
+
 class StageProcessor(Protocol):
     def process(
         self, inputs: dict[str, bytes], config: bytes, request: GPUJobRequest
-    ) -> tuple[ProcessorOutput, ...]: ...
+    ) -> tuple[ProcessorOutput, ...] | StageResult: ...
 
 
 class RunPodHandler:
@@ -68,9 +85,21 @@ class RunPodHandler:
                 for artifact in request.input_artifacts
             }
             config = self.store.get_bytes(request.config_uri)
-            outputs = processor.process(inputs, config, request)
+            processed = processor.process(inputs, config, request)
+            if isinstance(processed, StageResult):
+                outputs = processed.outputs
+                processor_metrics = processed.metrics
+                warnings = processed.warnings
+                result_status = processed.status
+            else:
+                outputs = processed
+                processor_metrics = {}
+                warnings = ()
+                result_status = "succeeded"
             if not outputs:
                 raise ValueError("PROCESSOR_OUTPUT_EMPTY")
+            if result_status not in {"succeeded", "quality_insufficient"}:
+                raise ValueError("PROCESSOR_STATUS_INVALID")
             artifact_refs: list[ArtifactRef] = []
             for output in outputs:
                 uri = f"{request.output_prefix.rstrip('/')}/{output.filename}"
@@ -87,12 +116,16 @@ class RunPodHandler:
             simulation = self.environment != "production"
             result = GPUJobResult(
                 job_id=request.job_id,
-                status="succeeded",
+                status=result_status,  # type: ignore[arg-type]
                 artifacts=tuple(artifact_refs),
                 metrics={
+                    "frames_total": 0,
+                    "frames_valid": 0,
+                    **processor_metrics,
                     "gpu_seconds": 0 if simulation else max(gpu_seconds, 1e-9),
                     "artifact_count": len(artifact_refs),
                 },
+                warnings=warnings,
                 simulation=simulation,
             )
             self.store.put_bytes(

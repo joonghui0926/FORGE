@@ -5,7 +5,7 @@ def test_quality_decision_routes_are_exhaustive() -> None:
     expected = {
         "ACCEPT": "package_dataset",
         "RECOLLECT": "create_terac_campaign",
-        "REVIEW": "operator_queue",
+        "REVIEW": "close_with_evidence",
         "BLOCK": "close_with_evidence",
     }
     for route, task in expected.items():
